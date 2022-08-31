@@ -42,8 +42,8 @@ void EventLoop::exec()
 void EventLoop::pump()
 {
 #ifdef __APPLE__
-    struct kevent events[EVENTS];
-    auto number_of_events = kevent(m_kq, nullptr, 0, events, EVENTS, NULL);
+    struct kevent events[2];
+    auto number_of_events = kevent(m_fd, nullptr, 0, events, 2, NULL);
 #else
     epoll_event events[10];
     auto number_of_events = epoll_wait(m_fd, events, 10, 1000);
@@ -76,7 +76,7 @@ void EventLoop::add_read(int read_fd, std::function<void(EventLoop&)> callback)
         .flags = EV_ADD | EV_ENABLE
     };
 
-    kevent(m_kq, &new_event, 1, 0, 0, 0);
+    kevent(m_fd, &new_event, 1, 0, 0, 0);
 #else
     epoll_event ev = {};
     ev.events = EPOLLIN | EPOLLET;
@@ -103,7 +103,7 @@ void EventLoop::remove_read(int read_fd)
         .flags = EV_DELETE
     };
 
-    kevent(m_kq, &old_event, 1, 0, 0, 0);
+    kevent(m_fd, &old_event, 1, 0, 0, 0);
 #else
     epoll_ctl(m_fd, EPOLL_CTL_DEL, read_fd, NULL);
 #endif
