@@ -1,6 +1,7 @@
 #include "utility/TcpServer.h"
 #include "utility/Bytes.hpp"
 #include "utility/EventLoop.h"
+#include "utility/log.hpp"
 #include <iostream>
 #include <signal.h>
 #include <stdio.h>
@@ -22,29 +23,25 @@ int main(int argc, char* argv[])
     EventLoop loop;
 
     if (server->listen(argv[1], atoi(argv[2])))
-        printf("listening on port: %s\n", argv[2]);
-
-    // Notifiers add to a static thread-local hashtable stored in EventLoop
-    // Each pump we wait for events and loop through all notifiers and add them to the queue
-    // And after the fd events have been received we then queue up the notifiers callback as events
+        logln("listening on port: {}", argv[2]);
 
     server->on_read = [&server](EventLoop& loop) {
         int fd = server->accept();
-        printf("accepted new cat %d\n", fd);
+        logln("Accepted new client {}", fd);
 
-        // TODO: remove requirement for epollin/epollet
         loop.add_read(fd, [fd](EventLoop& loop) {
             Bytes buf(1024);
 
             auto rc = recv(fd, (void*)buf.data(), buf.size(), 0);
             if (rc <= 0) {
-                printf("Connection closed!\n");
+                logln("Connection closed!");
                 loop.remove_read(fd);
                 return;
             }
 
-            std::string_view message((char const*)buf.data(), rc);
-            std::cout << fd << ": " << message;
+            // Remove newline from message
+            std::string_view message((char const*)buf.data(), rc - 1);
+            logln("Client {}: {}", fd, message);
         });
 
         // TODO: Make recv/reading bytes part of server/socket interface

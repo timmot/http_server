@@ -1,12 +1,18 @@
 #include <assert.h>
 #include <concepts>
+#include <cxxabi.h>
 #include <iomanip>
 #include <iostream>
+#include <sstream>
 #include <stdio.h>
 #include <string>
+#include <string_view>
+#include <typeinfo>
 
 namespace HiddenLog {
 std::string stringify(char const* string) { return string; }
+std::string stringify(char* string) { return string; }
+std::string stringify(std::string_view string) { return std::string(string); }
 std::string stringify(std::string string) { return std::forward<std::string>(string); }
 
 template <std::integral I>
@@ -22,7 +28,9 @@ std::string stringify(F number)
 template <typename T>
 std::string stringify(T anything)
 {
-    printf("Failed to format");
+    auto name = abi::__cxa_demangle(typeid(anything).name(), nullptr, nullptr, nullptr);
+    printf("Failed to format %s\n", name);
+
     assert(0);
     return {};
 }
@@ -45,7 +53,7 @@ std::string format(std::string const& format_string, Args... arg)
 }
 
 template <class... Args>
-inline void outln(std::string const& format_string, Args... args)
+inline void logln(std::string const& format_string, Args... args)
 {
     std::cout << HiddenLog::format(format_string, args...) << '\n';
 }
