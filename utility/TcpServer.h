@@ -3,17 +3,19 @@
 #pragma once
 
 #include <functional>
+#include <memory>
 #include <optional>
 #include <string_view>
 
 class EventLoop;
+class Socket;
 
 class TcpServer {
 public:
     static std::optional<TcpServer> create();
     ~TcpServer();
     bool listen(std::string_view host, uint16_t port);
-    int accept();
+    std::unique_ptr<Socket> accept();
 
     TcpServer(TcpServer const&) = delete;
     TcpServer operator=(TcpServer const&) = delete;
@@ -26,7 +28,5 @@ public:
     std::function<void(EventLoop&)> on_read;
 
 private:
-    void sendbuftosck(int sckfd, const char* buf, int len);
-
     int m_socket_fd;
 };

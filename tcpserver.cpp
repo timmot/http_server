@@ -1,12 +1,13 @@
 #include "utility/TcpServer.h"
 #include "utility/Bytes.hpp"
 #include "utility/EventLoop.h"
+#include "utility/Socket.h"
 #include "utility/log.hpp"
 #include <iostream>
+#include <memory>
 #include <signal.h>
 #include <stdio.h>
 #include <string_view>
-#include <sys/socket.h>
 
 int main(int argc, char* argv[])
 {
@@ -25,23 +26,31 @@ int main(int argc, char* argv[])
     if (server->listen(argv[1], atoi(argv[2])))
         logln("listening on port: {}", argv[2]);
 
-    server->on_read = [&server](EventLoop& loop) {
-        int fd = server->accept();
-        logln("Accepted new client {}", fd);
+    std::vector<std::unique_ptr<Socket>> clients;
+    server->on_read = [&server, &clients](EventLoop& loop) {
+        clients.emplace_back(server->accept());
+        auto client_id = clients.size() - 1;
+        logln("Accepted new client {}", clients.back()->fd());
 
-        loop.add_read(fd, [fd](EventLoop& loop) {
+        loop.add_read(clients.back()->fd(), [&clients, client_id](EventLoop& loop) {
             Bytes buf(1024);
+            auto nread = clients[client_id]->read(buf);
 
-            auto rc = recv(fd, (void*)buf.data(), buf.size(), 0);
-            if (rc <= 0) {
-                logln("Connection closed!");
-                loop.remove_read(fd);
+            if (nread <= 0) {
+                logln("Connection closed! {}", nread);
+                loop.remove_read(clients[client_id]->fd());
                 return;
             }
 
             // Remove newline from message
-            std::string_view message((char const*)buf.data(), rc - 1);
-            logln("Client {}: {}", fd, message);
+            std::string_view message((char const*)buf.data(), nread - 1);
+            logln("Client {}: {}", clients[client_id]->fd(), message);
+
+            Bytes response("Thank you!", 10);
+            clients[client_id]->write(response);
+
+            logln("Connection closed!");
+            loop.remove_read(clients[client_id]->fd());
         });
 
         // TODO: Make recv/reading bytes part of server/socket interface
@@ -56,8 +65,13 @@ int main(int argc, char* argv[])
         */
     };
 
+    signal(SIGINT, [](int) {
+        printf("Received Ctrl+C, shutting down.\n");
+        exit(EXIT_SUCCESS);
+    });
+
     loop.add_read(fileno(stdin), [](EventLoop const&) {
-        printf("Received key press, shutting down.\n");
+        printf("Received Enter press, shutting down.");
         exit(EXIT_SUCCESS);
     });
 

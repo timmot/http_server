@@ -3,6 +3,7 @@
 #include "TcpServer.h"
 #include "Bytes.hpp"
 #include "EventLoop.h"
+#include "Socket.h"
 #include <arpa/inet.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -63,19 +64,7 @@ bool TcpServer::listen(std::string_view host, uint16_t port)
     return true;
 }
 
-int TcpServer::accept()
+std::unique_ptr<Socket> TcpServer::accept()
 {
-    return ::accept(m_socket_fd, NULL, NULL);
-}
-
-void TcpServer::sendbuftosck(int sckfd, const char* buf, int len)
-{
-    int bytessent, pos;
-
-    pos = 0;
-    do {
-        if ((bytessent = send(sckfd, buf + pos, len - pos, 0)) < 0)
-            exit(1);
-        pos += bytessent;
-    } while (bytessent > 0);
+    return Socket::create_from_fd(::accept(m_socket_fd, NULL, NULL));
 }
