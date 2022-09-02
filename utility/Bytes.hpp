@@ -1,14 +1,14 @@
+// Copyright (c) 2022 - Tim Blackstone
 #pragma once
 
-#include <unistd.h>
 #include <stdint.h>
-#include <string.h>
 #include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
 
-class Bytes
-{
+class Bytes {
 public:
-    Bytes(char const* bytes, size_t size)
+    Bytes(void const* bytes, size_t size)
     {
         m_data = (uint8_t*)malloc(size);
         memcpy(m_data, bytes, size);
@@ -21,6 +21,9 @@ public:
         m_size = size;
     }
 
+    Bytes(Bytes const&) = delete;
+    Bytes const& operator=(Bytes const&) = delete;
+
     ~Bytes()
     {
         free(m_data);
@@ -32,6 +35,11 @@ public:
     uint8_t* data() { return m_data; }
     uint8_t const* data() const { return m_data; }
     size_t size() const { return m_size; }
+    void trim(size_t new_size)
+    {
+        if (new_size < m_size)
+            m_size = new_size;
+    }
 
 private:
     uint8_t* m_data;
