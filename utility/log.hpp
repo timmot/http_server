@@ -52,6 +52,11 @@ std::string format(std::string const& format_string, Args... arg)
 }
 }
 
+inline void logln(std::string const& format_string)
+{
+    std::cout << format_string << '\n';
+}
+
 template <class... Args>
 inline void logln(std::string const& format_string, Args... args)
 {
