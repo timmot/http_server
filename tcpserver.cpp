@@ -3,6 +3,7 @@
 #include "utility/TcpServer.h"
 #include "utility/Bytes.hpp"
 #include "utility/EventLoop.h"
+#include "utility/File.hpp"
 #include "utility/Socket.h"
 #include "utility/String.hpp"
 #include "utility/log.hpp"
@@ -67,19 +68,45 @@ struct HttpRequest {
 };
 
 struct HttpResponse {
-    std::string http_version = "1.1";
-    std::string status_code = "200";
-    std::string reason_phrase = "OK";
-    std::unordered_map<std::string, std::string> headers = {
-        { "Connection", "close" }
-    };
+    std::string http_version;
+    std::string status_code;
+    std::string reason_phrase;
+    std::unordered_map<std::string, std::string> headers;
+    std::optional<Bytes> body;
 
-    void serialise(Bytes& buffer)
+    std::string serialise()
     {
-        int string_length = std::snprintf((char*)buffer.data(), 1024, "HTTP/%s %s %s\n%s: %s\n\n", http_version.c_str(), status_code.c_str(), reason_phrase.c_str(), "Connection", headers.at("Connection").c_str());
-        buffer.trim(string_length);
+        std::string output = "HTTP/";
+        output += http_version + " " + status_code + " " + reason_phrase + "\n";
+
+        for (auto const& entry : headers) {
+            output += entry.first + ": " + entry.second + "\n";
+        }
+
+        output += "\n";
+
+        if (body.has_value()) {
+            output += std::string_view { (char*)body->data(), body->size() };
+        }
+
+        return output;
     }
 };
+
+// GET / HTTP/1.1
+// Host: localhost:8080
+// User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:105.0) Gecko/20100101 Firefox/105.0
+// Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8
+// Accept-Language: en-GB,en;q=0.5
+// Accept-Encoding: gzip, deflate, br
+// DNT: 1
+// Connection: keep-alive
+// Cookie: player-61646d696e=1; remember_token_P5000=tim|26dfc460eaca04fef43f3276f10319630aea5b154b1664f2928190ff3ec661d4d68b832ef0bc08faf6e5d3f520b1229935ba8ee5d894385d45d1ef451fe913fc
+// Upgrade-Insecure-Requests: 1
+// Sec-Fetch-Dest: document
+// Sec-Fetch-Mode: navigate
+// Sec-Fetch-Site: none
+// Sec-Fetch-User: ?1
 
 /* RFC9112 - 3.
      HTTP-message   = start-line
@@ -100,8 +127,7 @@ struct HttpResponse {
 // https://www.rfc-editor.org/rfc/rfc9112#name-message-body-length
 
 // https://www.rfc-editor.org/rfc/rfc9112#name-persistence
-[[nodiscard]] std::optional<HttpRequest>
-parse_html(std::string const& request)
+[[nodiscard]] std::optional<HttpRequest> parse_html(std::string const& request)
 {
     // TODO: Exchange this for socket code
     // TODO: Clear all excess \r (CR) as in spec.
@@ -116,7 +142,7 @@ parse_html(std::string const& request)
     auto request_line = split_view(*get_line(), ' ');
     if (request_line.size() != 3) {
         logln("Wrong amount of args in request line");
-        exit(1);
+        return {};
     }
 
     std::unordered_map<std::string, std::string> headers;
@@ -164,7 +190,7 @@ parse_html(std::string const& request)
         http_request.method = Method::PATCH;
     else {
         logln("Invalid method in request line");
-        exit(1);
+        return {};
     }
 
     // NOTE: This is the request target, it can come in four different forms depending on the method
@@ -207,12 +233,10 @@ int main(int argc, char* argv[])
                 return;
             }
 
+            // TODO: accumulate messages until we received two \n\n
             std::string message((char*)buf.data(), nread);
+            // logln(message);
             auto request = parse_html(message);
-
-            if (request) {
-                request->debug();
-            }
 
             HttpResponse response = {};
             response.http_version = "1.1";
@@ -220,15 +244,18 @@ int main(int argc, char* argv[])
             response.reason_phrase = "OK";
             response.headers.emplace("Connection", "close");
 
-            Bytes response_buffer(1024);
-            response.serialise(response_buffer);
-            logln("goodbye crule world");
-            std::string a((char*)response_buffer.data(), response_buffer.size());
-            logln(a);
-            clients[client_id]->write(response_buffer);
+            // Get Mimetype from file?
+            response.headers.emplace("Content-Type", "text/html");
 
-            logln("Connection closed!");
-            loop.remove_read(clients[client_id]->fd());
+            File index("index.html");
+            auto index_bytes = index.read_all();
+            response.headers.emplace("Content-Length", std::to_string(index_bytes.size()));
+            response.body = index_bytes;
+
+            auto response_string = response.serialise();
+            logln(response_string);
+            Bytes response_buffer(response_string.c_str(), response_string.size());
+            clients[client_id]->write(response_buffer);
         });
 
         // TODO: Make recv/reading bytes part of server/socket interface
