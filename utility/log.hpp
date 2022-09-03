@@ -9,8 +9,53 @@
 #include <string_view>
 #include <typeinfo>
 
+// Apologies SerenityOS
+
 namespace HiddenLog {
-std::string stringify(char const* string) { return string; }
+
+template <typename... Args>
+void compiletime_fail(Args...);
+
+template <size_t N>
+consteval auto count_format_braces(char const (&format_string)[N])
+{
+    bool found = false;
+    size_t count = 0;
+    for (size_t i = 0; i < N; ++i) {
+        if (format_string[i] == '{')
+            found = true;
+        else if (format_string[i] == '}' && found)
+            count++;
+        else
+            found = false;
+    }
+
+    return count;
+}
+
+template <size_t N, size_t params>
+consteval auto verify_format_string(char const (&format_string)[N])
+{
+    if (count_format_braces(format_string) != params)
+        compiletime_fail("Number of braces doesn't much number of parameters");
+}
+
+template <typename... Args>
+struct CheckedFormatString {
+    template <size_t N>
+    consteval CheckedFormatString(char const (&format_string)[N])
+        : m_string { format_string, N - 1 }
+    {
+        verify_format_string<N, sizeof...(Args)>(format_string);
+    }
+
+    std::string_view m_string;
+};
+
+std::string stringify(char const* string)
+{
+    return string;
+}
 std::string stringify(char* string) { return string; }
 std::string stringify(std::string_view string) { return std::string(string); }
 std::string stringify(std::string string) { return std::forward<std::string>(string); }
@@ -36,29 +81,30 @@ std::string stringify(T anything)
 }
 
 template <class... Args>
-std::string format(std::string const& format_string, Args... arg)
+std::string format(std::string_view format_string, Args... arg)
 {
-    auto output = format_string;
-    auto last_position = 0;
+    auto output = std::string(format_string);
 
-    ([&] {
-        auto template_position = output.find("{}", last_position);
-        last_position = template_position;
-        output.replace(template_position, 2, stringify(arg));
-    }(),
-        ...);
+    if constexpr (sizeof...(Args) > 0) {
+        auto last_position = 0;
+
+        ([&] {
+            auto template_position = output.find("{}", last_position);
+            last_position = template_position;
+            output.replace(template_position, 2, stringify(arg));
+        }(),
+            ...);
+    }
 
     return output;
 }
 }
 
-inline void logln(std::string const& format_string)
-{
-    std::cout << format_string << '\n';
-}
+template <typename... Args>
+using CheckedFormatString = HiddenLog::CheckedFormatString<std::type_identity_t<Args>...>;
 
-template <class... Args>
-inline void logln(std::string const& format_string, Args... args)
+template <typename... Args>
+void logln(CheckedFormatString<Args...>&& format_string, Args... args)
 {
-    std::cout << HiddenLog::format(format_string, args...) << '\n';
+    std::cout << HiddenLog::format(format_string.m_string, args...) << '\n';
 }
