@@ -49,6 +49,11 @@ struct CheckedFormatString {
         verify_format_string<N, sizeof...(Args)>(format_string);
     }
 
+    CheckedFormatString(std::string const& format_string)
+        : m_string { format_string }
+    {
+    }
+
     std::string_view m_string;
 };
 
