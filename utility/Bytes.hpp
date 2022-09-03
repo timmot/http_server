@@ -8,6 +8,21 @@
 
 class Bytes {
 public:
+    Bytes(Bytes const& bytes)
+        : m_size(bytes.m_size)
+    {
+        m_data = (uint8_t*)malloc(m_size);
+        memcpy(m_data, bytes.data(), bytes.size());
+    }
+
+    Bytes const& operator=(Bytes const& bytes)
+    {
+        m_size = bytes.size();
+        m_data = (uint8_t*)malloc(m_size);
+        memcpy(m_data, bytes.data(), bytes.size());
+        return *this;
+    }
+
     Bytes(void const* bytes, size_t size)
     {
         m_data = (uint8_t*)malloc(size);
@@ -20,9 +35,6 @@ public:
         m_data = (uint8_t*)malloc(size);
         m_size = size;
     }
-
-    Bytes(Bytes const&) = delete;
-    Bytes const& operator=(Bytes const&) = delete;
 
     ~Bytes()
     {
