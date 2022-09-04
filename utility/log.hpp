@@ -1,3 +1,5 @@
+#pragma once
+
 #include <assert.h>
 #include <concepts>
 #include <cxxabi.h>
@@ -8,6 +10,8 @@
 #include <string>
 #include <string_view>
 #include <typeinfo>
+
+// https://mpark.github.io/programming/2017/05/26/constexpr-function-parameters/
 
 // Apologies SerenityOS
 
