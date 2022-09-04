@@ -1,13 +1,16 @@
+// Copyright (c) 2022 - Tim Blackstone
+
 #pragma once
 
-#include <fstream>
 #include "Bytes.hpp"
+#include <fstream>
+#include <string>
+#include <string_view>
 
-class File
-{
+class File {
 public:
-    File(std::string const& path, std::string const& mode="rb")
-    : file_handle(fopen(path.c_str(), mode.c_str()))
+    File(std::string_view path, std::string const& mode = "rb")
+        : file_handle(fopen(std::string(path).c_str(), mode.c_str()))
     {
     }
 
