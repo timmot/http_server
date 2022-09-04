@@ -66,5 +66,13 @@ bool TcpServer::listen(std::string_view host, uint16_t port)
 
 std::unique_ptr<Socket> TcpServer::accept()
 {
-    return Socket::create_from_fd(::accept(m_socket_fd, NULL, NULL));
+    sockaddr_in their_addr = {};
+    socklen_t addr_size = sizeof their_addr;
+    auto new_socket = Socket::create_from_fd(::accept(m_socket_fd, (sockaddr*)&their_addr, &addr_size));
+
+    char client_ip[1024];
+    inet_ntop(AF_INET, &(their_addr.sin_addr), client_ip, 1024);
+    printf("%s\n", client_ip);
+
+    return new_socket;
 }
