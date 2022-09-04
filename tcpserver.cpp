@@ -1,7 +1,10 @@
 // Copyright (c) 2022 - Tim Blackstone
 
 #include "utility/TcpServer.h"
+#include "http/HttpRequest.hpp"
+#include "http/HttpResponse.hpp"
 #include "utility/Bytes.hpp"
+#include "utility/DateTime.hpp"
 #include "utility/EventLoop.h"
 #include "utility/File.hpp"
 #include "utility/Socket.h"
@@ -12,86 +15,6 @@
 #include <signal.h>
 #include <stdio.h>
 #include <string_view>
-
-enum class Method {
-    GET,
-    HEAD,
-    POST,
-    PUT,
-    DELETE,
-    CONNECT,
-    OPTIONS,
-    TRACE,
-    PATCH
-};
-
-struct HttpRequest {
-    Method method;
-    std::string path;
-    std::unordered_map<std::string, std::string> headers;
-
-    std::string method_name()
-    {
-        switch (method) {
-        case Method::GET:
-            return "GET";
-        case Method::HEAD:
-            return "HEAD";
-        case Method::POST:
-            return "POST";
-        case Method::PUT:
-            return "PUT";
-        case Method::DELETE:
-            return "DELETE";
-        case Method::CONNECT:
-            return "CONNECT";
-        case Method::OPTIONS:
-            return "OPTIONS";
-        case Method::TRACE:
-            return "TRACE";
-        case Method::PATCH:
-            return "PATCH";
-        default:
-            return "";
-        }
-    }
-
-    inline void debug()
-    {
-        logln("{} request to {}", method_name(), path);
-
-        logln("Headers:");
-        for (auto pair : headers) {
-            logln("{}:{}", pair.first, pair.second);
-        }
-    }
-};
-
-struct HttpResponse {
-    std::string http_version;
-    std::string status_code;
-    std::string reason_phrase;
-    std::unordered_map<std::string, std::string> headers;
-    std::optional<Bytes> body;
-
-    std::string serialise()
-    {
-        std::string output = "HTTP/";
-        output += http_version + " " + status_code + " " + reason_phrase + "\n";
-
-        for (auto const& entry : headers) {
-            output += entry.first + ": " + entry.second + "\n";
-        }
-
-        output += "\n";
-
-        if (body.has_value()) {
-            output += std::string_view { (char*)body->data(), body->size() };
-        }
-
-        return output;
-    }
-};
 
 // GET / HTTP/1.1
 // Host: localhost:8080
@@ -228,46 +151,35 @@ int main(int argc, char* argv[])
             auto nread = clients[client_id]->read(buf);
 
             if (nread <= 0) {
-                logln("Connection closed! {}", nread);
+                logln("Connection closed! {}", clients[client_id]->fd());
                 loop.remove_read(clients[client_id]->fd());
                 return;
             }
 
-            // TODO: accumulate messages until we received two \n\n
+            // TODO: accumulate text until we received two \n\n
             std::string message((char*)buf.data(), nread);
-            // logln(message);
-            auto request = parse_html(message);
+            auto maybe_request = parse_html(message);
 
-            HttpResponse response = {};
-            response.http_version = "1.1";
-            response.status_code = "200";
-            response.reason_phrase = "OK";
-            response.headers.emplace("Connection", "close");
+            if (!maybe_request.has_value()) {
+                logln("failed to parse request");
+                logln(message);
+                return;
+            }
 
-            // Get Mimetype from file?
-            response.headers.emplace("Content-Type", "text/html");
-
-            File index("index.html");
-            auto index_bytes = index.read_all();
-            response.headers.emplace("Content-Length", std::to_string(index_bytes.size()));
-            response.body = index_bytes;
-
-            auto response_string = response.serialise();
-            logln(response_string);
-            Bytes response_buffer(response_string.c_str(), response_string.size());
-            clients[client_id]->write(response_buffer);
+            if (maybe_request->path.ends_with(".png")) {
+                auto response = HttpResponse::create_file_response("hack.png");
+                auto response_string = response.serialise();
+                logln("responded at {} to {}", DateTime::now().to_string(), maybe_request->path);
+                Bytes response_buffer(response_string);
+                clients[client_id]->write(response_buffer);
+            } else {
+                auto response = HttpResponse::create_file_response("index.html");
+                auto response_string = response.serialise();
+                logln("responded at {} to {}", DateTime::now().to_string(), maybe_request->path);
+                Bytes response_buffer(response_string);
+                clients[client_id]->write(response_buffer);
+            }
         });
-
-        // TODO: Make recv/reading bytes part of server/socket interface
-        /*
-        auto sock = server->accept();
-
-        sock.on_ready_to_read = [&sock]() {
-            auto bytes = sock.read_all();
-            std::string_view message((char const*)bytes.data(), rc);
-            std::cout << fd << ": " << message;
-        }
-        */
     };
 
     signal(SIGINT, [](int) {
