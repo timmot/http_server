@@ -1,4 +1,5 @@
 // Copyright (c) 2022 - Tim Blackstone
+
 #pragma once
 
 #include <stdint.h>
@@ -24,10 +25,17 @@ public:
     }
 
     Bytes(void const* bytes, size_t size)
+        : m_size(size)
     {
         m_data = (uint8_t*)malloc(size);
         memcpy(m_data, bytes, size);
-        m_size = size;
+    }
+
+    Bytes(std::string const& string)
+        : m_size(string.size())
+    {
+        m_data = (uint8_t*)malloc(m_size);
+        memcpy(m_data, string.data(), string.size());
     }
 
     Bytes(size_t size)
