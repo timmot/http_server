@@ -3,6 +3,7 @@
 #include "EventLoop.h"
 #include <stdio.h>
 #include <unistd.h>
+#include <utility>
 
 #ifdef __APPLE__
 #include <sys/event.h>
@@ -42,8 +43,8 @@ void EventLoop::exec()
 void EventLoop::pump()
 {
 #ifdef __APPLE__
-    struct kevent events[2];
-    auto number_of_events = kevent(m_fd, nullptr, 0, events, 2, NULL);
+    struct kevent events[10];
+    auto number_of_events = kevent(m_fd, nullptr, 0, events, 10, NULL);
 #else
     epoll_event events[10];
     auto number_of_events = epoll_wait(m_fd, events, 10, 1000);
@@ -76,7 +77,7 @@ void EventLoop::add_read(int read_fd, std::function<void(EventLoop&)> callback)
         .flags = EV_ADD | EV_ENABLE
     };
 
-    kevent(m_fd, &new_event, 1, 0, 0, 0);
+    kevent(m_fd, &new_event, 1, NULL, 0, NULL);
 #else
     epoll_event ev = {};
     ev.events = EPOLLIN | EPOLLET;
@@ -109,7 +110,7 @@ void EventLoop::remove_read(int read_fd)
 #endif
 
     auto entry = m_fd_to_callback.find(read_fd);
-    if (entry != m_fd_to_callback.end()) {
+
+    if (entry != m_fd_to_callback.end())
         m_fd_to_callback.erase(entry);
-    }
 }

@@ -9,9 +9,13 @@ std::vector<std::string> split(std::string const& text, char separator)
 {
     std::vector<std::string> output;
 
+    if (text.find(separator) == std::string::npos)
+        return { text };
+
     for (size_t i = 0; i < text.size();) {
         auto j = text.find_first_of(separator, i);
         if (j == std::string::npos) {
+            // FIXME: if we get here on the first iteration, we get a new substring from 0 to n - 1
             j = text.size() - 1;
             output.push_back(text.substr(i, j - i));
             break;
@@ -26,6 +30,9 @@ std::vector<std::string> split(std::string const& text, char separator)
 std::vector<std::string_view> split_view(std::string_view text, char separator)
 {
     std::vector<std::string_view> output;
+
+    if (text.find(separator) == std::string::npos)
+        return { text };
 
     for (size_t i = 0; i < text.size();) {
         auto j = text.find_first_of(separator, i);

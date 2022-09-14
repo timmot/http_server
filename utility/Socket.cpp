@@ -13,20 +13,19 @@ std::unique_ptr<Socket> Socket::create_from_fd(int fd)
 
 Socket::~Socket()
 {
-    printf("destroy");
     close(m_fd);
 }
 
-ssize_t Socket::read(Bytes const& buffer)
+ssize_t Socket::read(Bytes& buffer)
 {
-    return recv(m_fd, (void*)buffer.data(), buffer.size(), 0);
+    return recv(m_fd, (void*)buffer.data(), buffer.size(), MSG_WAITALL);
 }
 
 ssize_t Socket::write(Bytes const& buffer)
 {
     ssize_t sent = 0;
     while (sent < (ssize_t)buffer.size()) {
-        int write_count = send(m_fd, (void*)(buffer.data() + sent), buffer.size() - sent, 0);
+        int write_count = send(m_fd, (void*)(buffer.data() + sent), buffer.size() - sent, MSG_NOSIGNAL);
 
         if (write_count == -1)
             return -1;
