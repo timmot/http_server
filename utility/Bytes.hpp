@@ -5,10 +5,14 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#include <string>
 #include <unistd.h>
 
 class Bytes {
 public:
+    // TODO: implement move constructor
+    // NOTE: move = default; only works if all values can be moved, this generally means no raw pointers
+    // raw pointers must have their address copied
     Bytes(Bytes const& bytes)
         : m_size(bytes.m_size)
     {

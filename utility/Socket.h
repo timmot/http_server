@@ -4,6 +4,7 @@
 
 #include <memory>
 #include <optional>
+#include <stdio.h>
 
 class Bytes;
 
@@ -18,7 +19,7 @@ public:
 
     ~Socket();
 
-    ssize_t read(Bytes const& buffer);
+    ssize_t read(Bytes& buffer);
     ssize_t write(Bytes const& buffer);
 
     int fd() const

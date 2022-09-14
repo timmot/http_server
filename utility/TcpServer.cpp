@@ -68,7 +68,12 @@ std::unique_ptr<Socket> TcpServer::accept()
 {
     sockaddr_in their_addr = {};
     socklen_t addr_size = sizeof their_addr;
-    auto new_socket = Socket::create_from_fd(::accept(m_socket_fd, (sockaddr*)&their_addr, &addr_size));
+    auto new_fd = ::accept(m_socket_fd, (sockaddr*)&their_addr, &addr_size);
+
+    int sock_opts = fcntl(new_fd, F_GETFL);
+    fcntl(new_fd, F_SETFL, sock_opts | O_NONBLOCK);
+
+    auto new_socket = Socket::create_from_fd(new_fd);
 
     char client_ip[1024];
     inet_ntop(AF_INET, &(their_addr.sin_addr), client_ip, 1024);
