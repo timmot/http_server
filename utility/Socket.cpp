@@ -18,7 +18,12 @@ Socket::~Socket()
 
 ssize_t Socket::read(Bytes& buffer)
 {
-    return recv(m_fd, (void*)buffer.data(), buffer.size(), MSG_WAITALL);
+    return recv(m_fd, (void*)buffer.data(), buffer.size(), 0);
+}
+
+ssize_t Socket::read(std::span<uint8_t> buffer)
+{
+    return recv(m_fd, (void*)buffer.data(), buffer.size(), 0);
 }
 
 ssize_t Socket::write(Bytes const& buffer)

@@ -128,7 +128,7 @@ std::optional<Message> parse_json(std::string message)
 
         case JsonState::Value:
             if (key == "number") {
-                // FIXME: what does 97717743314710839372219267221764680508953168505572670845853077 output?
+                // FIXME: what does 97717743314710839372219267221764680508953168505572670845853077 parse as?
                 message_json.number = make_int();
             } else if (key == "method") {
                 consume('"');
@@ -243,6 +243,9 @@ int main()
 
                 if (!maybe_json.has_value()) {
                     Bytes read_more(1024);
+                    auto nread = client->read(read_more);
+                    logln("Read {} after failing json", nread);
+
                     Bytes malformed("{}", 2);
                     client->write(malformed);
                     auto fd = client->fd();
