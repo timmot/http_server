@@ -39,8 +39,10 @@ TcpServer::~TcpServer()
     close(m_socket_fd);
 }
 
-bool TcpServer::listen(std::string_view host, uint16_t port)
+bool TcpServer::listen(std::string_view, uint16_t port)
 {
+    // FIXME: Use host parameter instead of INADDR_ANY
+
     sockaddr_in address = {};
     address.sin_family = AF_INET;
     address.sin_port = htons(port);
