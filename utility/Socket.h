@@ -44,23 +44,8 @@ public:
     {
     }
 
-    BufferedSocket(BufferedSocket&& other)
-        : m_buffer(other.m_buffer)
-        , m_used_size(other.m_used_size)
-        , m_eof(other.m_eof)
-        , m_socket(std::move(other.m_socket))
-    {
-    }
-
-    BufferedSocket& operator=(BufferedSocket&& other)
-    {
-        m_buffer = other.m_buffer; // TODO: delete other
-        m_used_size = other.m_used_size; // TODO: set to 0?
-        m_eof = other.m_eof;
-        m_socket = std::move(other.m_socket); // TODO: Exchange?
-
-        return *this;
-    }
+    BufferedSocket(BufferedSocket&& other) = default;
+    BufferedSocket& operator=(BufferedSocket&& other) = default;
 
     // NOTE: The default copy constructor's break our unique_ptr member
     BufferedSocket(BufferedSocket const&) = delete;
@@ -95,18 +80,12 @@ public:
         if (m_used_size == 0)
             populate_buffer();
 
-        // Find index of candidate
-        //
-
-        // Give bytes a contains/find function
-        // - memmem syscall seems to be the way
-        // - does serenity and std's string find implementation use memmem?
-        // Give bytes a way to return a subset
-
-        // Want to return bytes from N to M and ignore/remove them from our buffer
         if (m_used_size > 0) {
             auto maybe_index = m_buffer.find((uint8_t)candidate, m_used_size);
             if (maybe_index.has_value()) {
+                if (*maybe_index == 0)
+                    return Bytes {};
+
                 auto buffer_to_take = m_buffer.slice(0, *maybe_index);
                 auto buffer_to_move = m_buffer.slice(*maybe_index, m_used_size);
                 m_buffer.overwrite(0, buffer_to_move.data(), m_used_size);
@@ -130,8 +109,10 @@ public:
     // TODO: Read exactly the amount of bytes requests or fail and leave any remaining bytes in the m_buffer
     Bytes read_exactly(size_t n)
     {
-        if (m_used_size < n)
+        while (m_used_size < n) {
+            printf("%d\n", m_used_size);
             populate_buffer();
+        }
 
         auto readable_size = std::min(m_used_size, n);
         auto buffer_to_take = m_buffer.slice(0, readable_size);
@@ -172,7 +153,7 @@ private:
 
             // add buffer to m_buffer
             if (read_count > 0) {
-                printf("reading %ld\n", read_count);
+                printf("populating %ld\n", read_count);
                 m_used_size += read_count;
             }
         } while (read_count > 0);
