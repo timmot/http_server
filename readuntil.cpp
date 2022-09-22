@@ -20,22 +20,6 @@ int main()
     else
         return 1;
 
-    // TODO: Need to use a buffered socket
-    // e.g. https://github.com/SerenityOS/serenity/blob/master/Userland/Libraries/LibCore/Stream.h#L798
-    // e.g. https://github.com/python/cpython/blob/main/Lib/asyncio/streams.py#L556
-
-    // Do we have to set up on_read to do this buffering of reads?
-
-    // Serenity static_casts their Socket implementation to their BufferedSocket implementation
-    // Which I suppose is acceptable because BufferedSocket inherits Socket?
-
-    // Implementation
-    // 1. each time a BufferedSocket has read() called, see if the buffer needs to be refilled
-
-    // check if eof?
-    // check if readable?
-    //
-
     std::vector<BufferedSocket> clients;
     server->on_read = [&server, &clients](EventLoop& loop) {
         clients.emplace_back(BufferedSocket { server->accept() });
