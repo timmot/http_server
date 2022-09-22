@@ -20,6 +20,9 @@ namespace HiddenLog {
 template <typename... Args>
 void compiletime_fail(Args...);
 
+template <typename>
+inline constexpr bool always_false = false;
+
 template <size_t N>
 consteval auto count_format_braces(char const (&format_string)[N])
 {
@@ -61,13 +64,10 @@ struct CheckedFormatString {
     std::string_view m_string;
 };
 
-std::string stringify(char const* string)
-{
-    return string;
-}
+std::string stringify(char const* string) { return string; }
 std::string stringify(char* string) { return string; }
 std::string stringify(std::string_view string) { return std::string(string); }
-std::string stringify(std::string string) { return std::forward<std::string>(string); }
+std::string stringify(std::string const& string) { return string; }
 
 template <std::integral I>
 std::string stringify(I number) { return std::to_string(number); }
@@ -79,13 +79,16 @@ std::string stringify(F number)
     buffer << std::fixed << std::setprecision(2) << number;
     return buffer.str();
 }
-template <typename T>
-std::string stringify(T anything)
-{
-    auto name = abi::__cxa_demangle(typeid(anything).name(), nullptr, nullptr, nullptr);
-    printf("Failed to format %s\n", name);
 
-    assert(0);
+template <typename T>
+std::string stringify(T)
+{
+    static_assert(always_false<T>, "Failed to format type");
+
+    // Runtime failure
+    /*auto name = abi::__cxa_demangle(typeid(anything).name(), nullptr, nullptr, nullptr);
+    printf("Failed to format %s\n", name);
+    assert(0);*/
     return {};
 }
 
