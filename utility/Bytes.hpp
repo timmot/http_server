@@ -164,26 +164,6 @@ public:
         memset(m_data, 0, m_size);
     }
 
-    uint32_t to_uint32()
-    {
-        return static_cast<uint32_t>(m_data[0] << 24 | m_data[1] << 16 | m_data[2] << 8 | m_data[3]);
-    }
-
-    int32_t to_int32()
-    {
-        return static_cast<int32_t>(m_data[0] << 24 | m_data[1] << 16 | m_data[2] << 8 | m_data[3]);
-    }
-
-    uint16_t to_uint16()
-    {
-        return static_cast<uint16_t>(m_data[0] << 8 | m_data[1]);
-    }
-
-    int16_t to_int16()
-    {
-        return static_cast<int16_t>(m_data[0] << 8 | m_data[1]);
-    }
-
     void debug()
     {
         printf("Address: %p ; size: %ld\n", (void*)m_data, m_size);
