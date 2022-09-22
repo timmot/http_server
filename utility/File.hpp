@@ -9,8 +9,8 @@
 
 class File {
 public:
-    File(std::string_view path, std::string const& mode = "rb")
-        : file_handle(fopen(std::string(path).c_str(), mode.c_str()))
+    File(std::string_view path, std::string_view mode = "rb")
+        : file_handle(fopen(path.data(), mode.data()))
     {
     }
 
