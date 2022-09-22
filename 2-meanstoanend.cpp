@@ -4,8 +4,34 @@
 #include "utility/TcpServer.h"
 #include "utility/log.hpp"
 #include <iostream>
+#include <map>
 #include <memory>
 #include <vector>
+
+uint32_t to_uint32(std::span<uint8_t> data)
+{
+    return static_cast<uint32_t>(data[0] << 24 | data[1] << 16 | data[2] << 8 | data[3]);
+}
+
+int32_t to_int32(std::span<uint8_t> data)
+{
+    return static_cast<int32_t>(data[0] << 24 | data[1] << 16 | data[2] << 8 | data[3]);
+}
+
+uint16_t to_uint16(std::span<uint8_t> data)
+{
+    return static_cast<uint16_t>(data[0] << 8 | data[1]);
+}
+
+int16_t to_int16(std::span<uint8_t> data)
+{
+    return static_cast<int16_t>(data[0] << 8 | data[1]);
+}
+
+class Client : public BufferedSocket {
+public:
+    std::map<int32_t, int32_t> database {};
+};
 
 int main()
 {
@@ -19,44 +45,54 @@ int main()
     else
         return 1;
 
-    std::vector<std::unique_ptr<Socket>> clients;
+    std::vector<Client> clients;
     server->on_read = [&server, &clients](EventLoop& loop) {
-        auto client = clients.emplace_back(server->accept()).get();
-        logln("Accepted new client {}", client->fd());
+        clients.emplace_back(Client { server->accept() });
+        auto& client = clients.back();
+        logln("Accepted new client {}", client.fd());
 
-        loop.add_read(client->fd(), [client, &clients](EventLoop& loop) {
-            Bytes buf(1);
-            auto nread = client->read(buf);
+        while (true) {
+            auto buf = client.read_exactly(9);
 
-            if (nread <= 0) {
+            /*if (b <= 0) {
                 logln("Connection closed for {}, {} clients remaining", client->fd(), clients.size());
                 loop.remove_read(client->fd());
                 clients.erase(std::remove_if(clients.begin(), clients.end(), [client](auto& client_ptr) { return client_ptr->fd() == client->fd(); }));
-            }
+            }*/
 
             if (buf[0] == 'I') { // Insert
-                printf("insert\n");
-                Bytes intbuf(4);
-                nread = client->read(intbuf);
+                auto timestamp = to_int32(buf.span().subspan(1, 4));
+                auto price = to_int32(buf.span().subspan(5, 4));
 
-                printf("%d\n", intbuf.to_int32());
-                Bytes pricebuf(4);
-                nread = client->read(pricebuf);
-
-                printf("%d\n", pricebuf.to_int32());
+                client.database.insert({ timestamp, price });
+                printf("insert %d %d\n", timestamp, price);
             } else if (buf[0] == 'Q') { // Query
-                printf("query\n");
-                Bytes bufa(4);
-                nread = client->read(bufa);
-                Bytes bufb(4);
-                nread = client->read(bufb);
-                printf("%d\n", bufa.to_int32());
-                printf("%d\n", bufb.to_int32());
+                auto min_time = to_int32(buf.span().subspan(1, 4));
+                auto max_time = to_int32(buf.span().subspan(5, 4));
+
+                int32_t mean = 0;
+                int32_t count = 0;
+                for (auto const& entry : client.database) {
+                    if (entry.first >= min_time && entry.first <= max_time) {
+                        mean += entry.second;
+                        ++count;
+                    }
+                }
+                mean /= count;
+
+                printf("query %d %d\n", min_time, max_time);
+                printf("result: %d %d\n", mean, count);
+
+                mean = __builtin_bswap32(mean);
+
+                Bytes result(&mean, 4);
+                result.debug();
+                client.write(result);
             } else {
                 printf("brokey\n");
-                printf("%c\n", buf[0]);
+                buf.debug();
             }
-        });
+        }
     };
 
     loop.exec();
