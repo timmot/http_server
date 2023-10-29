@@ -19,6 +19,7 @@ public:
 
     std::string to_string()
     {
+        // THOUGHT: Could store calendar date (year/month/day, etc) instead of timestamp?
         tm calendar_date_time = {};
         localtime_r(&m_seconds_since_epoch, &calendar_date_time);
 
