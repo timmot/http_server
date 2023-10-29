@@ -59,8 +59,11 @@ public:
     BufferedSocket(BufferedSocket const&) = delete;
     BufferedSocket& operator=(BufferedSocket const&) = delete;
 
-    Bytes read(Bytes& buffer)
+    std::optional<Bytes> read(Bytes& buffer)
     {
+        if (m_eof && m_used_size == 0)
+            return {};
+            
         if (m_used_size == 0)
             populate_buffer();
 
