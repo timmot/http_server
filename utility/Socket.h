@@ -68,10 +68,13 @@ public:
             populate_buffer();
 
         auto readable_size = std::min(m_used_size, buffer.size());
+        printf("%ld %ld\n", readable_size, m_used_size);
         auto buffer_to_take = m_buffer.slice(0, readable_size);
         auto buffer_to_shift = m_buffer.slice(readable_size, m_used_size);
         m_buffer.overwrite(0, buffer_to_shift.data(), m_used_size);
         m_used_size -= readable_size;
+
+        printf("%ld\n", m_used_size);
 
         // Copy constructor memcpy's the actual data (not just the pointer ref)
         return buffer_to_take;
@@ -121,7 +124,7 @@ public:
     Bytes read_exactly(size_t n)
     {
         while (m_used_size < n) {
-            printf("%d\n", m_used_size);
+            printf("%ld\n", m_used_size);
             populate_buffer();
         }
 
@@ -150,11 +153,16 @@ private:
     {
         ssize_t read_count;
         do {
+            // TODO: Ensure buffer size has enough room to accept this subspan
+            // m_buffer.ensure(m_used_size + 1024); ?
             auto buffer = m_buffer.span().subspan(m_used_size, 1024);
             read_count = m_socket->read(buffer);
+            printf("read %ld\n", read_count);
 
-            if (read_count == -1)
+            if (read_count == -1) {
+                printf("hit error\n");
                 break;
+            }
 
             if (read_count == 0) {
                 printf("hit eof\n");
