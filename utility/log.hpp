@@ -10,6 +10,7 @@
 #include <string>
 #include <string_view>
 #include <typeinfo>
+#include <vector>
 
 // https://mpark.github.io/programming/2017/05/26/constexpr-function-parameters/
 
@@ -78,6 +79,19 @@ std::string stringify(F number)
     std::stringstream buffer;
     buffer << std::fixed << std::setprecision(2) << number;
     return buffer.str();
+}
+
+template <typename T>
+std::string stringify(std::vector<T> const& vector)
+{
+    std::string out;
+    for (size_t i = 0; i < vector.size(); ++i) {
+        out += stringify(vector[i]);
+        if (i < vector.size() - 1)
+            out += ",";
+    }
+
+    return out;
 }
 
 template <typename T>
