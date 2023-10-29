@@ -50,6 +50,17 @@ struct HttpRequest {
         }
     }
 
+    std::string serialise()
+    {
+        std::string request = method_name() + " " + path + " HTTP/1.1\r\n";
+        for (auto& header : headers) {
+            request += header.first + ": " + header.second + "\r\n";
+        }
+        request += "\r\n";
+
+        return request;
+    }
+
     inline void debug()
     {
         logln("{} request to {}", method_name(), path);
