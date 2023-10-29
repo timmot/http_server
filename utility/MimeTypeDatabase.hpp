@@ -26,7 +26,7 @@ public:
 #endif
     }
 
-    std::optional<std::string> detect_mime_type(std::string_view filename)
+    std::optional<std::string> detect_mime_type([[maybe_unused]] std::string_view filename)
     {
 #if __has_include(<magic.h>) && USE_LIBMAGIC
         auto result = magic_file(m_magic, std::string(filename).c_str());
