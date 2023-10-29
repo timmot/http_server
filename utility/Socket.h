@@ -36,8 +36,16 @@ private:
 
 class BufferedSocket {
 public:
+    BufferedSocket(int fd)
+        : m_buffer(Bytes(65536))
+        , m_used_size(0)
+        , m_eof(false)
+    {
+        m_socket = Socket::create_from_fd(fd);
+    }
+
     BufferedSocket(std::unique_ptr<Socket> socket)
-        : m_buffer(Bytes(16384))
+        : m_buffer(Bytes(65536))
         , m_used_size(0)
         , m_eof(false)
         , m_socket(std::move(socket))
