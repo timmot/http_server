@@ -15,7 +15,7 @@ std::vector<std::string_view> split_view(std::string_view text, char separator)
     for (size_t i = 0; i < text.size();) {
         auto j = text.find_first_of(separator, i);
         if (j == std::string::npos) {
-            j = text.size() - 1;
+            j = text.size();
             auto view = text.substr(i, j - i);
             output.push_back(view);
             break;
