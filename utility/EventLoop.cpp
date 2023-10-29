@@ -71,11 +71,10 @@ void EventLoop::pump()
 void EventLoop::add_read(int read_fd, std::function<void(EventLoop&)> callback)
 {
 #ifdef __APPLE__
-    struct kevent new_event = {
-        .ident = (uintptr_t)read_fd,
-        .filter = EVFILT_READ,
-        .flags = EV_ADD | EV_ENABLE
-    };
+    struct kevent new_event = {};
+    new_event.ident = (uintptr_t)read_fd;
+    new_event.filter = EVFILT_READ;
+    new_event.flags = EV_ADD | EV_ENABLE;
 
     kevent(m_fd, &new_event, 1, NULL, 0, NULL);
 #else
@@ -98,11 +97,10 @@ void EventLoop::remove_read(int read_fd)
     // From kqueue manpage:
     // Events which are attached to file descriptors are automatically deleted on the last close of the descriptor.
 
-    struct kevent old_event = {
-        .ident = (uintptr_t)read_fd,
-        .filter = EVFILT_READ,
-        .flags = EV_DELETE
-    };
+    struct kevent old_event = {};
+    old_event.ident = (uintptr_t)read_fd;
+    old_event.filter = EVFILT_READ;
+    old_event.flags = EV_DELETE;
 
     kevent(m_fd, &old_event, 1, 0, 0, 0);
 #else

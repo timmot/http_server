@@ -1,5 +1,11 @@
 // Copyright (c) 2022 - Tim Blackstone
 
+/* NOTES:
+ * https://www.youtube.com/watch?v=P9csgxBgaZ8
+ * https://github.com/redis/redis/blob/7239e9ca5ff9dd430d5d7c7bda934a43b13fd8ad/src/ae.c
+ * https://github.com/redis/redis/blob/7239e9ca5ff9dd430d5d7c7bda934a43b13fd8ad/src/ae_epoll.c
+ */
+
 #pragma once
 
 #include <functional>
