@@ -135,24 +135,24 @@ int main(int argc, char* argv[])
     if (!server.has_value())
         exit(EXIT_FAILURE);
 
-    EventLoop loop;
+    EventLoop main_loop;
 
     if (server->listen(argv[1], atoi(argv[2])))
         logln("listening on port: {}", argv[2]);
 
     std::vector<std::unique_ptr<Socket>> clients;
-    server->on_read = [&server, &clients](EventLoop& loop) {
+    server->on_read = [&server, &clients](EventLoop& server_loop) {
         clients.emplace_back(server->accept());
         auto client_id = clients.size() - 1;
         logln("Accepted new client {}", clients.back()->fd());
 
-        loop.add_read(clients.back()->fd(), [&clients, client_id](EventLoop& loop) {
+        server_loop.add_read(clients.back()->fd(), [&clients, client_id](EventLoop& client_loop) {
             Bytes buf(1024);
             auto nread = clients[client_id]->read(buf);
 
             if (nread <= 0) {
                 logln("Connection closed! {}", clients[client_id]->fd());
-                loop.remove_read(clients[client_id]->fd());
+                client_loop.remove_read(clients[client_id]->fd());
                 return;
             }
 
@@ -183,16 +183,17 @@ int main(int argc, char* argv[])
     };
 
     signal(SIGINT, [](int) {
+        // TODO: Can we quit the loop instead?
         printf("Received Ctrl+C, shutting down.\n");
         exit(EXIT_SUCCESS);
     });
 
-    loop.add_read(fileno(stdin), [](EventLoop const&) {
+    main_loop.add_read(fileno(stdin), [](EventLoop const&) {
         printf("Received Enter press, shutting down.");
         exit(EXIT_SUCCESS);
     });
 
-    loop.exec();
+    main_loop.exec();
 
     return EXIT_SUCCESS;
 }
