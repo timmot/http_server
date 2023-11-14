@@ -167,13 +167,15 @@ int main(int argc, char* argv[])
             }
 
             if (maybe_request->path.ends_with(".png")) {
-                auto response = HttpResponse::create_file_response("hack.png");
+                auto maybe_response = HttpResponse::create_file_response("../hack.png");
+                auto response = maybe_response.value_or(HttpResponse::create_error_response());
                 auto response_string = response.serialise();
                 logln("responded at {} to {}", DateTime::now().to_string(), maybe_request->path);
                 Bytes response_buffer(response_string);
                 clients[client_id]->write(response_buffer);
             } else {
-                auto response = HttpResponse::create_file_response("index.html");
+                auto maybe_response = HttpResponse::create_file_response("../index.html");
+                auto response = maybe_response.value_or(HttpResponse::create_error_response());
                 auto response_string = response.serialise();
                 logln("responded at {} to {}", DateTime::now().to_string(), maybe_request->path);
                 Bytes response_buffer(response_string);

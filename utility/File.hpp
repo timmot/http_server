@@ -9,8 +9,18 @@
 
 class File {
 public:
-    File(std::string_view path, std::string_view mode = "rb")
-        : file_handle(fopen(path.data(), mode.data()))
+    static std::optional<std::unique_ptr<File>> open(std::string_view path, std::string_view mode = "rb")
+    {
+        auto file_handle = fopen(path.data(), mode.data());
+
+        if (file_handle)
+            return std::make_unique<File>(file_handle);
+
+        return {};
+    }
+
+    File(FILE* file_handle)
+        : file_handle(file_handle)
     {
     }
 
@@ -39,9 +49,10 @@ public:
 
     ~File()
     {
-        fclose(file_handle);
+        if (file_handle)
+            fclose(file_handle);
     }
 
 private:
-    FILE* file_handle;
+    FILE* file_handle = nullptr;
 };
