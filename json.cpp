@@ -1,6 +1,7 @@
-#include "http/JsonObject.hpp"
+#include "http/JsonValue.hpp"
 #include "utility/String.hpp"
 #include "utility/log.hpp"
+#include <cassert>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -21,11 +22,17 @@ enum class JsonState {
     Complete
 };
 
-std::optional<std::unordered_map<std::string, std::variant<double, std::string, std::vector<double>>>>
-parse_json(std::string message)
+std::optional<JsonValue> parse_json(std::string message)
 {
-    std::unordered_map<std::string, std::variant<double, std::string, std::vector<double>>> message_json = {};
+    JsonObject message_json = {};
     auto it = message.begin();
+
+    auto peek = [&it, &message](char c) -> bool {
+        if (it == message.end())
+            return false;
+
+        return (*it) == c;
+    };
 
     auto consume = [&it, &message](char c) -> bool {
         if (it == message.end())
@@ -50,6 +57,20 @@ parse_json(std::string message)
             val += (*it);
             ++it;
         }
+        return val;
+    };
+
+    auto consume_after = [&it, &message](char c) -> std::string {
+        if (it == message.end())
+            return "";
+
+        std::string val;
+        while ((*it) != c) {
+            val += (*it);
+            ++it;
+        }
+        val += (*it);
+        ++it;
         return val;
     };
 
@@ -127,19 +148,25 @@ parse_json(std::string message)
 
         case JsonState::Value:
             if (consume('"')) {
-                logln("parsing string - unhandled");
-                discard_until('"'); // strings
+                logln("parsing string");
+                message_json.insert({ key, consume_until('"') });
                 consume('"');
-            } else if (consume('{')) {
-                logln("parsing object - unhandled");
-                discard_until('}'); // objects
-                consume('}');
+            } else if (peek('{')) {
+                logln("parsing object");
+                auto object_text = consume_after('}');
+                auto object = parse_json(object_text);
+                if (object.has_value())
+                    message_json.insert({ key, *object });
+                else {
+                    state = JsonState::Malformed;
+                    break;
+                }
             } else if (consume('[')) {
                 logln("parsing array");
                 auto csv = consume_until(']');
                 auto values_view = split_view(csv, ',');
 
-                std::vector<double> json_array;
+                JsonArray json_array;
                 for (auto value : values_view) {
                     json_array.push_back(std::stod(std::string { value }));
                 }
@@ -151,6 +178,7 @@ parse_json(std::string message)
                 message_json.insert({ key, make_int().value() }); // numbers
             } else if ((*it) == 't' || (*it) == 'f') {
                 logln("parsing bool");
+                message_json.insert({ key, (*it) == 't' });
                 while ((*it) != ',' && (*it) != '}')
                     ++it; // bools
             } else {
@@ -163,7 +191,6 @@ parse_json(std::string message)
                 logln("reading comma");
                 state = JsonState::Key;
             } else if (consume('}')) {
-
                 logln("reading final brace");
                 state = JsonState::Complete;
             } else {
@@ -175,45 +202,37 @@ parse_json(std::string message)
         case JsonState::Malformed:
             printf("Failed at '%c'\n", *it);
             break;
+        case JsonState::Complete:
+            // leave the loop
+            break;
         }
     }
 
-    return message_json;
+    return { message_json };
 }
 
 int main()
 {
-    auto messageOne = "{\"number\":12,\"numberb\":4.3,\"test\":{\"a\":\"b\"},\"Values\":[50,100,100,100,100,100,100,100,50]}";
+    auto messageOne = "{\"number\":12,\"numberb\":4.3,\"test\":{\"a\":\"b\"},\"Values\":[50,100,100,100,100,100,100,100,50],\"hello\":\"world\",\"other\":false}";
     auto jsonOne = parse_json(messageOne);
-    auto messageTwo = "{\"entryone\":4,\"entrytwo\":12,\"Values\":[50,100,100,100,100,100,100,100,50]}";
-    auto jsonTwo = parse_json(messageTwo);
-
-    if (!jsonOne.has_value())
-        return 1;
-    if (!jsonTwo.has_value())
-        return 1;
 
     logln("Parsing {}", messageOne);
-    for (auto& entry : *jsonOne) {
-        if (std::holds_alternative<double>(entry.second))
-            logln("{}: {}", entry.first, std::get<double>(entry.second));
-        else if (std::holds_alternative<std::string>(entry.second))
-            logln("{}: {}", entry.first, std::get<std::string>(entry.second));
-        else if (std::holds_alternative<std::vector<double>>(entry.second))
-            logln("{}: {}", entry.first, std::get<std::vector<double>>(entry.second));
-        else
-            logln("{}: unhandled", entry.first);
-    }
+    assert(jsonOne.has_value());
+    assert(jsonOne->is_object());
+    logln("Result: {}", jsonOne->debug());
 
-    logln("Parsing {}", messageTwo);
-    for (auto& entry : *jsonTwo) {
-        if (std::holds_alternative<double>(entry.second))
-            logln("{}: {}", entry.first, std::get<double>(entry.second));
+    auto jsonObject = jsonOne->as_object();
+    assert(jsonObject.contains("number"));
+    assert(jsonObject.contains("numberb"));
+    assert(jsonObject.contains("test"));
+    assert(jsonObject.contains("Values"));
+    assert(jsonObject.contains("hello"));
+    assert(jsonObject.contains("other"));
 
-        if (std::holds_alternative<std::string>(entry.second))
-            logln("{}: {}", entry.first, std::get<std::string>(entry.second));
-
-        if (std::holds_alternative<std::vector<double>>(entry.second))
-            logln("{}: {}", entry.first, std::get<std::vector<double>>(entry.second));
-    }
+    assert(jsonObject["number"].is_double());
+    assert(jsonObject["numberb"].is_double());
+    assert(jsonObject["test"].is_object());
+    assert(jsonObject["Values"].is_array());
+    assert(jsonObject["hello"].is_string());
+    assert(jsonObject["other"].is_bool());
 }
