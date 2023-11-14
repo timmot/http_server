@@ -149,14 +149,14 @@ std::optional<JsonValue> parse_json(std::string message)
         case JsonState::Value:
             if (consume('"')) {
                 logln("parsing string");
-                message_json.insert({ key, consume_until('"') });
+                message_json.insert({ key, new JsonValue(consume_until('"')) });
                 consume('"');
             } else if (peek('{')) {
                 logln("parsing object");
                 auto object_text = consume_after('}');
                 auto object = parse_json(object_text);
                 if (object.has_value())
-                    message_json.insert({ key, *object });
+                    message_json.insert({ key, new JsonValue(*object) });
                 else {
                     state = JsonState::Malformed;
                     break;
@@ -171,14 +171,14 @@ std::optional<JsonValue> parse_json(std::string message)
                     json_array.push_back(std::stod(std::string { value }));
                 }
 
-                message_json.insert({ key, json_array });
+                message_json.insert({ key, new JsonValue(json_array) });
                 consume(']'); // arrays
             } else if ((*it) == '-' || ((*it) >= '0' && (*it) <= '9')) {
                 logln("parsing number");
-                message_json.insert({ key, make_int().value() }); // numbers
+                message_json.insert({ key, new JsonValue(make_int().value()) }); // numbers
             } else if ((*it) == 't' || (*it) == 'f') {
                 logln("parsing bool");
-                message_json.insert({ key, (*it) == 't' });
+                message_json.insert({ key, new JsonValue((*it) == 't') });
                 while ((*it) != ',' && (*it) != '}')
                     ++it; // bools
             } else {
@@ -229,10 +229,10 @@ int main()
     assert(jsonObject.contains("hello"));
     assert(jsonObject.contains("other"));
 
-    assert(jsonObject["number"].is_double());
-    assert(jsonObject["numberb"].is_double());
-    assert(jsonObject["test"].is_object());
-    assert(jsonObject["Values"].is_array());
-    assert(jsonObject["hello"].is_string());
-    assert(jsonObject["other"].is_bool());
+    assert(jsonObject["number"]->is_double());
+    assert(jsonObject["numberb"]->is_double());
+    assert(jsonObject["test"]->is_object());
+    assert(jsonObject["Values"]->is_array());
+    assert(jsonObject["hello"]->is_string());
+    assert(jsonObject["other"]->is_bool());
 }

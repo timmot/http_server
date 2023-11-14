@@ -16,7 +16,7 @@ public:
 
 class JsonValue;
 using JsonArray = std::vector<JsonValue>;
-using JsonObject = std::unordered_map<std::string, JsonValue>;
+using JsonObject = std::unordered_map<std::string, JsonValue*>;
 
 class JsonValue {
 public:
@@ -80,7 +80,7 @@ public:
             auto object = as_object();
             buffer << "{";
             for (auto key_pair : object)
-                buffer << '"' << key_pair.first << "\": " << key_pair.second.debug() << ',';
+                buffer << '"' << key_pair.first << "\": " << key_pair.second->debug() << ',';
             buffer << "}";
         } else if (std::holds_alternative<JsonArray>(m_value)) {
             auto array = as_array();
