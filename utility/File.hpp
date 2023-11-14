@@ -20,39 +20,39 @@ public:
     }
 
     File(FILE* file_handle)
-        : file_handle(file_handle)
+        : m_file_handle(file_handle)
     {
     }
 
     bool is_open() const
     {
-        return file_handle != nullptr;
+        return m_file_handle != nullptr;
     }
 
     Bytes read(size_t size) const
     {
         Bytes buffer(size);
-        fread(buffer.data(), size, 1, file_handle);
+        fread(buffer.data(), size, 1, m_file_handle);
         return buffer;
     }
 
     Bytes read_all() const
     {
-        fseek(file_handle, 0, SEEK_END);
-        auto size = ftell(file_handle);
-        rewind(file_handle);
+        fseek(m_file_handle, 0, SEEK_END);
+        auto size = ftell(m_file_handle);
+        rewind(m_file_handle);
 
         Bytes buffer(size);
-        fread(buffer.data(), size, 1, file_handle);
+        fread(buffer.data(), size, 1, m_file_handle);
         return buffer;
     }
 
     ~File()
     {
-        if (file_handle)
-            fclose(file_handle);
+        if (m_file_handle)
+            fclose(m_file_handle);
     }
 
 private:
-    FILE* file_handle = nullptr;
+    FILE* m_file_handle = nullptr;
 };
