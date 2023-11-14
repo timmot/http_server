@@ -1,6 +1,5 @@
 // Copyright (c) 2022 - Tim Blackstone
 
-#include "utility/TcpServer.h"
 #include "http/HttpRequest.hpp"
 #include "http/HttpResponse.hpp"
 #include "utility/Bytes.hpp"
@@ -9,16 +8,17 @@
 #include "utility/File.hpp"
 #include "utility/Socket.h"
 #include "utility/String.hpp"
+#include "utility/TcpServer.h"
 #include "utility/log.hpp"
+#include <arpa/inet.h>
+#include <fcntl.h>
 #include <iostream>
 #include <memory>
+#include <netinet/in.h>
 #include <signal.h>
 #include <stdio.h>
 #include <string_view>
 #include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <fcntl.h>
 
 // GET / HTTP/1.1
 // Host: localhost:8080
@@ -150,7 +150,7 @@ int main(int argc, char* argv[])
         if (maybe_response->size() > 0)
             logln("Message received (len {}): {}", maybe_response->size(), std::string { (char*)maybe_response->data(), maybe_response->size() });
     });
-    
+
     signal(SIGINT, [](int) {
         // TODO: Can we quit the loop instead?
         printf("Received Ctrl+C, shutting down.\n");
@@ -162,13 +162,12 @@ int main(int argc, char* argv[])
         exit(EXIT_SUCCESS);
     });
 
-/*
-    sockaddr_in address = {};
-    address.sin_family = AF_INET;
-    address.sin_port = htons(8000);
-    address.sin_addr.s_addr = INADDR_ANY;
-*/
-    {
+    /*
+        sockaddr_in address = {};
+        address.sin_family = AF_INET;
+        address.sin_port = htons(8000);
+        address.sin_addr.s_addr = INADDR_ANY;
+    */
     sockaddr_in address = {};
     address.sin_family = AF_INET;
     address.sin_port = htons(8000);
