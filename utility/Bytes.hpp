@@ -172,12 +172,30 @@ public:
 
     void debug()
     {
-        printf("Address: %p ; size: %ld\n", (void*)m_data, m_size);
+        printf("Address: %p ; size: %ld %02lX\n", (void*)m_data, m_size, m_size);
         for (size_t i = 0; i < size(); ++i) {
-            printf("0x%2X 0d%d %c\n", m_data[i], m_data[i], m_data[i]);
+            if (m_data[i] >= 32 && m_data[i] <= 126)
+                printf("0x%02X 0d%d\t%c\n", m_data[i], m_data[i], m_data[i]);
+            else
+                printf("0x%02X 0d%d\t[unprintable]\n", m_data[i], m_data[i]);
         }
     }
 
+    void debug_hex()
+    {
+        printf("Address: %p ; size: %ld  %02lX\n", (void*)m_data, m_size, m_size);
+        for (size_t i = 0; i < size(); ++i) {
+            if (i != 0) {
+                if (i % 16 == 0)
+                    printf("\n0x%04zX: ", i);
+                else
+                    printf(" ");
+            }
+
+            printf("%02X", m_data[i]);
+        }
+        printf("\n");
+    }
 
     void ensure(size_t size)
     {
