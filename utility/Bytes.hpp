@@ -159,6 +159,12 @@ public:
         memcpy(m_data + start, data, length);
     }
 
+    void overwrite(size_t start, Bytes const& other_bytes)
+    {
+        assert(start + other_bytes.size() <= m_size);
+        memcpy(m_data + start, other_bytes.data(), other_bytes.size());
+    }
+
     void zero()
     {
         memset(m_data, 0, m_size);
