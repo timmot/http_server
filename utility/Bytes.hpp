@@ -172,6 +172,24 @@ public:
         }
     }
 
+
+    void ensure(size_t size)
+    {
+        if (size < m_size)
+            return;
+
+        auto new_size = m_size;
+        while (new_size < size)
+            new_size *= 2;
+
+        auto new_data = new (std::nothrow) uint8_t[new_size];
+        memcpy(new_data, m_data, m_size);
+
+        delete[] m_data;
+        m_data = new_data;
+        m_size = new_size;
+    }
+
 private:
     uint8_t* m_data;
     size_t m_size;
