@@ -63,18 +63,18 @@ public:
     {
         if (m_eof && m_used_size == 0)
             return {};
-            
+
         if (m_used_size == 0)
             populate_buffer();
 
         auto readable_size = std::min(m_used_size, buffer.size());
-        printf("%ld %ld\n", readable_size, m_used_size);
+        printf("readable:%ld used:%ld\n", readable_size, m_used_size);
         auto buffer_to_take = m_buffer.slice(0, readable_size);
         auto buffer_to_shift = m_buffer.slice(readable_size, m_used_size);
         m_buffer.overwrite(0, buffer_to_shift.data(), m_used_size);
         m_used_size -= readable_size;
 
-        printf("%ld\n", m_used_size);
+        printf("remaining in buffer:%ld\n", m_used_size);
 
         // Copy constructor memcpy's the actual data (not just the pointer ref)
         return buffer_to_take;
@@ -154,7 +154,8 @@ private:
         ssize_t read_count;
         do {
             // TODO: Ensure buffer size has enough room to accept this subspan
-            // m_buffer.ensure(m_used_size + 1024); ?
+            m_buffer.ensure(m_used_size + 1024);
+
             auto buffer = m_buffer.span().subspan(m_used_size, 1024);
             read_count = m_socket->read(buffer);
             printf("read %ld\n", read_count);
