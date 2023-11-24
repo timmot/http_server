@@ -54,6 +54,7 @@ public:
             m_sound_timer--;
             logln("Sound timer: {}", m_sound_timer);
             logln("BZZZ");
+            // TODO: add sound
         }
 
         auto opcode = m_system_memory.slice_span(m_program_counter, 2);
@@ -77,13 +78,10 @@ public:
 
         if (first_byte == 0x00 && second_byte == 0xee) {
             // Return
-            // printf("Address: 0x%02X return", m_program_counter);
             m_stack_pointer--;
             m_program_counter = m_stack[m_stack_pointer];
-            // printf("ing to 0x%04X\n", m_program_counter);
         } else if (first_byte == 0x00 && second_byte == 0xe0) {
             // Display
-            // printf("Address: 0x%02X clear display\n", m_program_counter);
             m_display.fill(0);
             m_program_counter += 2;
         } else if ((first_byte & 0xf0) == 0x10) {
@@ -94,12 +92,10 @@ public:
                 // TODO: pause the program instead of quitting
                 return true;
             }
-            // printf("Address: 0x%02X Goto %03X\n", m_program_counter, address);
             m_program_counter = address;
         } else if ((first_byte & 0xf0) == 0x20) {
             // Flow - subroutine call
             uint16_t address = ((first_byte << 8) | second_byte) & 0xfff;
-            // printf("Address: 0x%02X Call subroutine at %03X\n", m_program_counter, address);
             m_program_counter += 2;
             m_stack[m_stack_pointer] = m_program_counter;
             m_stack_pointer++;
@@ -107,42 +103,76 @@ public:
         } else if ((first_byte & 0xf0) == 0x30) {
             // Cond - Skip the next instruction if VX == NN
             if (m_registers[first_byte & 0x0f] == second_byte) {
-                // printf("Address: 0x%02X V%1X == %02X, skipping\n", m_program_counter, first_byte & 0x0f, second_byte);
                 m_program_counter += 4;
             } else {
-                //("Address: 0x%02X V%1X != %02X, not skipping\n", m_program_counter, first_byte & 0x0f, second_byte);
                 m_program_counter += 2;
             }
         } else if ((first_byte & 0xf0) == 0x40) {
             // Cond - Skip the next instruction if VX != NN
             if (m_registers[first_byte & 0x0f] != second_byte) {
-                // printf("Address: 0x%02X V%1X != %02X, skipping\n", m_program_counter, first_byte & 0x0f, second_byte);
                 m_program_counter += 4;
             } else {
-                // printf("Address: 0x%02X V%1X == %02X, not skipping\n", m_program_counter, first_byte & 0x0f, second_byte);
+                m_program_counter += 2;
+            }
+        } else if ((first_byte & 0xf0) == 0x50 && (second_byte & 0xf) == 0x0) {
+            // Skip if Vx == Vy
+            if (m_registers[first_byte & 0x0f] == m_registers[second_byte >> 4]) {
+                m_program_counter += 4;
+            } else {
                 m_program_counter += 2;
             }
         } else if ((first_byte & 0xf0) == 0x60) {
             // Const - set register
-            // printf("Address: 0x%02X V%1X = %02X\n", m_program_counter, first_byte & 0xf, second_byte);
             m_registers[first_byte & 0x0f] = second_byte;
             m_program_counter += 2;
         } else if ((first_byte & 0xf0) == 0x70) {
             // Add NN to Vx (carry flag is not changed)
-            // printf("Address: 0x%02X V%1X += %02X\n", m_program_counter, first_byte & 0xf, second_byte);
             // FIXME: Intentional overflow, can we check this?
             m_registers[first_byte & 0xf] += second_byte;
             m_program_counter += 2;
+        } else if ((first_byte & 0xf0) == 0x80) {
+            // Arithmetic
+            auto vx = first_byte & 0xf;
+            auto vy = second_byte >> 4;
+            if ((second_byte & 0xf) == 0x0)
+                m_registers[vx] = m_registers[vy];
+            else if ((second_byte & 0xf) == 0x1)
+                m_registers[vx] |= m_registers[vy];
+            else if ((second_byte & 0xf) == 0x2)
+                m_registers[vx] &= m_registers[vy];
+            else if ((second_byte & 0xf) == 0x3)
+                m_registers[vx] ^= m_registers[vy];
+            else if ((second_byte & 0xf) == 0x4) {
+                // TODO: Adds VY to VX. VF is set to 1 when there's a carry, and to 0 when there is not.
+                m_registers[vx] += m_registers[vy];
+            } else if ((second_byte & 0xf) == 0x5) {
+                // TODO: VY is subtracted from VX. VF is set to 0 when there's a borrow, and 1 when there is not.
+                m_registers[vx] -= m_registers[vy];
+            } else if ((second_byte & 0xf) == 0x6) {
+                // TODO: Stores the least significant bit of VX in VF and then shifts VX to the right by 1.
+                m_registers[vx] >>= m_registers[vy];
+            } else if ((second_byte & 0xf) == 0x7) {
+                // TODO: Sets VX to VY minus VX. VF is set to 0 when there's a borrow, and 1 when there is not.
+                m_registers[vx] = m_registers[vy] - m_registers[vx];
+            } else if ((second_byte & 0xf) == 0xe) {
+                // TODO: Stores the most significant bit of VX in VF and then shifts VX to the left by 1.
+                m_registers[vx] <<= m_registers[vy];
+            }
+        } else if ((first_byte & 0xf0) == 0x90 && (second_byte & 0xf) == 0x0) {
+            // Skip if Vx != Vy
+            if (m_registers[first_byte & 0x0f] != m_registers[second_byte >> 4]) {
+                m_program_counter += 4;
+            } else {
+                m_program_counter += 2;
+            }
         } else if ((first_byte & 0xf0) == 0xa0) {
             // MEM - set I register
             m_i_register = ((first_byte << 8) | second_byte) & 0xfff;
-            // printf("Address: 0x%02X I = %03X\n", m_program_counter, m_i_register);
             m_program_counter += 2;
         } else if ((first_byte & 0xf0) == 0xc0) {
             // Random, vX = rand() & NN
             auto rand = m_random.take_int<uint8_t>();
             m_registers[first_byte & 0xf] = rand & second_byte;
-            // printf("Address: 0x%02X V%1X = %02X (rand) & %02X = %02X\n", m_program_counter, first_byte & 0xf, rand, second_byte, m_registers[first_byte & 0xf]);
 
             m_program_counter += 2;
         } else if ((first_byte & 0xf0) == 0xd0) {
@@ -184,15 +214,23 @@ public:
                         m_registers[0xf] = 1;
                     }
                 } else {
-                auto index = floor(x_origin / 8) + 8 * (j + y_origin);
-                auto set_bits = std::bitset<8>(m_display[index]).count();
+                    auto index = floor(x_origin / 8) + 8 * (j + y_origin);
+                    auto set_bits = std::bitset<8>(m_display[index]).count();
                     m_display[index] ^= pixels[j];
 
-                if (set_bits != std::bitset<8>(m_display[index]).count())
-                    m_registers[0xf] = 1;
+                    if (set_bits != std::bitset<8>(m_display[index]).count())
+                        m_registers[0xf] = 1;
                 }
             }
 
+            m_program_counter += 2;
+        } else if ((first_byte & 0xf0) == 0xe0 && second_byte == 0x9e) {
+            // TODO: EX9E 	KeyOp 	if (key() == Vx) 	Skips the next instruction if the key stored in VX is pressed (usually the next instruction is a jump to skip a code block).
+            printf("Address: 0x%02X unhandled opcode: %02X%02X noop\n", m_program_counter, first_byte, second_byte);
+            m_program_counter += 2;
+        } else if ((first_byte & 0xf0) == 0xe0 && second_byte == 0xa1) {
+            // TODO: EXA1 	KeyOp 	if (key() != Vx) 	Skips the next instruction if the key stored in VX is not pressed (usually the next instruction is a jump to skip a code block).
+            printf("Address: 0x%02X unhandled opcode: %02X%02X noop\n", m_program_counter, first_byte, second_byte);
             m_program_counter += 2;
         } else if ((first_byte & 0xf0) == 0xf0 && second_byte == 0x7) {
             // Get delay timer
@@ -201,16 +239,46 @@ public:
         } else if ((first_byte & 0xf0) == 0xf0 && (second_byte & 0xf) == 0xa) {
             // KeyOp - wait for key event
             if (!key_press_register.has_value()) {
-                // printf("Address: 0x%02X V%1X; Waiting for key press 0-9a-f\n", m_program_counter, first_byte & 0xf);
                 printf("Waiting for key...\n");
                 key_press_register = first_byte & 0xf;
-                // registers[key_press_register] = key in press_key
             }
         } else if ((first_byte & 0xf0) == 0xf0 && second_byte == 0x15) {
             m_delay_timer = m_registers[first_byte & 0xf];
             m_program_counter += 2;
+        } else if ((first_byte & 0xf0) == 0xf0 && second_byte == 0x18) {
+            m_sound_timer = m_registers[first_byte & 0xf];
+            m_program_counter += 2;
         } else if ((first_byte & 0xf0) == 0xf0 && second_byte == 0x1e) {
             m_i_register += m_registers[first_byte & 0xf];
+            m_program_counter += 2;
+        } else if ((first_byte & 0xf0) == 0xf0 && second_byte == 0x29) {
+            // TODO: FX29 	MEM 	I = sprite_addr[Vx] 	Sets I to the location of the sprite for the character in VX. Characters 0-F (in hexadecimal) are represented by a 4x5 font.
+            printf("Address: 0x%02X unhandled opcode: %02X%02X noop\n", m_program_counter, first_byte, second_byte);
+            m_program_counter += 2;
+        } else if ((first_byte & 0xf0) == 0xf0 && second_byte == 0x33) {
+            /*
+             TODO: FX33 	BCD
+
+            set_BCD(Vx)
+            *(I+0) = BCD(3);
+            *(I+1) = BCD(2);
+            *(I+2) = BCD(1);
+
+            Stores the binary-coded decimal representation of VX, with the hundreds digit in memory at location in I, the tens digit at location I+1, and the ones digit at location I+2.
+            */
+            printf("Address: 0x%02X unhandled opcode: %02X%02X noop\n", m_program_counter, first_byte, second_byte);
+            m_program_counter += 2;
+        } else if ((first_byte & 0xf0) == 0xf0 && second_byte == 0x55) {
+            // reg_dump, store from V0 to Vx in memory starting at I, increasing the offset for each register
+            for (int i = 0; i <= (first_byte & 0xf); i++) {
+                m_system_memory[m_i_register++] = m_registers[i];
+            }
+            m_program_counter += 2;
+        } else if ((first_byte & 0xf0) == 0xf0 && second_byte == 0x65) {
+            // reg_load, fill V0 to Vx from memory starting at I, increasing the offset for each register
+            for (int i = 0; i <= (first_byte & 0xf); i++) {
+                m_registers[i] = m_system_memory[m_i_register++];
+            }
             m_program_counter += 2;
         } else {
             printf("Address: 0x%02X unhandled opcode: %02X%02X noop\n", m_program_counter, first_byte, second_byte);
