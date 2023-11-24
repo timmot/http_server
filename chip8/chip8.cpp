@@ -209,6 +209,9 @@ public:
         } else if ((first_byte & 0xf0) == 0xf0 && second_byte == 0x15) {
             m_delay_timer = m_registers[first_byte & 0xf];
             m_program_counter += 2;
+        } else if ((first_byte & 0xf0) == 0xf0 && second_byte == 0x1e) {
+            m_i_register += m_registers[first_byte & 0xf];
+            m_program_counter += 2;
         } else {
             // printf("Address: 0x%02X saw opcode: %02X%02X noop\n", m_program_counter, first_byte, second_byte);
             m_program_counter += 2;
