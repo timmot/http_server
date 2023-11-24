@@ -165,7 +165,7 @@ public:
 
                 auto index = floor(x_origin / 8) + 8 * (j + y_origin);
                 auto set_bits = std::bitset<8>(m_display[index]).count();
-                m_display[index] = flip_byte(pixels[j]);
+                m_display[index] = pixels[j];
 
                 if (set_bits != std::bitset<8>(m_display[index]).count())
                     m_registers[0xf] = 1;
@@ -389,9 +389,9 @@ int main(int argc, char* argv[])
                 for (int i = 0; i < 8; i++) {
                     if (byte & (1 << i)) {
                         if (render_scale == 1)
-                            SDL_RenderDrawPoint(renderer, col * 8 + i, row);
+                            SDL_RenderDrawPoint(renderer, col * 8 + (7 - i), row);
                         else {
-                            SDL_Rect rect { (col * 8 + i) * render_scale, row * render_scale, render_scale, render_scale };
+                            SDL_Rect rect { (col * 8 + (7 - i)) * render_scale, row * render_scale, render_scale, render_scale };
                             SDL_RenderFillRect(renderer, &rect);
                         }
                     }
