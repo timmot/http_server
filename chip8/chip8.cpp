@@ -213,7 +213,7 @@ public:
             m_i_register += m_registers[first_byte & 0xf];
             m_program_counter += 2;
         } else {
-            // printf("Address: 0x%02X saw opcode: %02X%02X noop\n", m_program_counter, first_byte, second_byte);
+            printf("Address: 0x%02X unhandled opcode: %02X%02X noop\n", m_program_counter, first_byte, second_byte);
             m_program_counter += 2;
         }
 
