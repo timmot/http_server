@@ -159,16 +159,38 @@ public:
             //  each pixel is bit-coded, e.g. 1s = active pixel, 0s = dead pixel
             //  pixels are XORed to the screen, if an active pixel is XORed set the carry flag to 1
             m_registers[0xf] = 0;
-            for (int j = 0; j < height; j++) {
-                if (x_origin % 8 != 0)
-                    logln("Fix your code! Tried to draw at x:{} ({}), y:{}", x_origin, x_origin / 8.0, y_origin);
 
+            auto remainder = x_origin % 8;
+            for (int j = 0; j < height; j++) {
+                if (remainder != 0) {
+                    // To handle remainders we have to write across two bytes
+                    // Get the index of each byte
+                    auto first_index = floor(x_origin / 8) + 8 * (j + y_origin);
+                    auto second_index = first_index + 1;
+
+                    // Check the amount of set bits to determine if any have changed by the end
+                    auto first_set_bits = std::bitset<8>(m_display[first_index]).count();
+                    auto second_set_bits = std::bitset<8>(m_display[second_index]).count();
+
+                    // Both bytes are combined into a single variable
+                    uint16_t display = m_display[first_index] << 8 | m_display[second_index];
+                    // The bytes to be written are shifted to the correct bit-index, e.g. a remainder of 5 will start from the 5th bit of the first byte
+                    display ^= pixels[j] << remainder;
+                    // Unpack each byte from this variable
+                    m_display[first_index] = display >> 8;
+                    m_display[second_index] = display & 0xff;
+
+                    if (first_set_bits != std::bitset<8>(m_display[first_index]).count() || second_set_bits != std::bitset<8>(m_display[second_index]).count()) {
+                        m_registers[0xf] = 1;
+                    }
+                } else {
                 auto index = floor(x_origin / 8) + 8 * (j + y_origin);
                 auto set_bits = std::bitset<8>(m_display[index]).count();
                 m_display[index] = pixels[j];
 
                 if (set_bits != std::bitset<8>(m_display[index]).count())
                     m_registers[0xf] = 1;
+                }
             }
 
             m_program_counter += 2;
