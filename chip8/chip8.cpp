@@ -186,7 +186,7 @@ public:
                 } else {
                 auto index = floor(x_origin / 8) + 8 * (j + y_origin);
                 auto set_bits = std::bitset<8>(m_display[index]).count();
-                m_display[index] = pixels[j];
+                    m_display[index] ^= pixels[j];
 
                 if (set_bits != std::bitset<8>(m_display[index]).count())
                     m_registers[0xf] = 1;
