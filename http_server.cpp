@@ -1,6 +1,5 @@
 // Copyright (c) 2022 - Tim Blackstone
 
-#include "utility/TcpServer.h"
 #include "http/HttpRequest.hpp"
 #include "http/HttpResponse.hpp"
 #include "utility/Bytes.hpp"
@@ -10,6 +9,7 @@
 #include "utility/Ipv4Address.hpp"
 #include "utility/Socket.h"
 #include "utility/String.hpp"
+#include "utility/TcpServer.h"
 #include "utility/log.hpp"
 #include <iostream>
 #include <memory>

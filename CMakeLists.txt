@@ -14,7 +14,7 @@ set(CMAKE_CXX_FLAGS "-Wall --pedantic -Wshadow -Wextra")
 
 FILE(GLOB SOURCE_FILES utility/*.cpp http/*.cpp)
 
-add_executable(server tcpserver.cpp ${SOURCE_FILES})
+add_executable(server http_server.cpp ${SOURCE_FILES})
 target_link_libraries(server magic)
 
 add_executable(client http_client.cpp ${SOURCE_FILES})
