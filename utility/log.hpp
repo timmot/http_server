@@ -134,6 +134,12 @@ template <typename... Args>
 using CheckedFormatString = HiddenLog::CheckedFormatString<std::type_identity_t<Args>...>;
 
 template <typename... Args>
+std::string format(CheckedFormatString<Args...>&& format_string, Args... args)
+{
+    return HiddenLog::format(format_string.m_string, args...);
+}
+
+template <typename... Args>
 void logln(CheckedFormatString<Args...>&& format_string, Args... args)
 {
     puts(HiddenLog::format(format_string.m_string, args...).c_str());
