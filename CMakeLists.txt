@@ -20,4 +20,4 @@ target_link_libraries(server magic)
 add_executable(client tcpclient.cpp ${SOURCE_FILES})
 add_executable(json json.cpp ${SOURCE_FILES})
 
-add_subdirectory(chip8)
+#add_subdirectory(chip8)

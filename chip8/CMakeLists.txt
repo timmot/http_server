@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.8)
 
-set(CMAKE_MODULE_PATH ../cmake)
+set(CMAKE_MODULE_PATH cmake)
 
 find_package(SDL2 REQUIRED)
 find_package(SDL2TTF REQUIRED)
