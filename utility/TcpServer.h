@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "Ipv4Address.hpp"
 #include <functional>
 #include <memory>
 #include <optional>
@@ -14,7 +15,7 @@ class TcpServer {
 public:
     static std::optional<TcpServer> create();
     ~TcpServer();
-    bool listen(std::string_view host, uint16_t port);
+    bool listen(Ipv4Address host, uint16_t port);
     std::unique_ptr<Socket> accept();
 
     TcpServer(TcpServer const&) = delete;

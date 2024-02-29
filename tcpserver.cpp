@@ -7,6 +7,7 @@
 #include "utility/DateTime.hpp"
 #include "utility/EventLoop.h"
 #include "utility/File.hpp"
+#include "utility/Ipv4Address.hpp"
 #include "utility/Socket.h"
 #include "utility/String.hpp"
 #include "utility/log.hpp"
@@ -137,8 +138,17 @@ int main(int argc, char* argv[])
 
     EventLoop main_loop;
 
-    if (server->listen(argv[1], atoi(argv[2])))
-        logln("listening on port: {}", argv[2]);
+    auto maybe_ip = Ipv4Address::from_string(argv[1]);
+
+    if (!maybe_ip.has_value()) {
+        logln("bad ip format");
+        exit(EXIT_FAILURE);
+    }
+
+    if (!server->listen(*maybe_ip, atoi(argv[2])))
+        exit(EXIT_FAILURE);
+
+    logln("listening on host: {}, port: {}", maybe_ip->to_string(), argv[2]);
 
     std::vector<std::unique_ptr<Socket>> clients;
     server->on_read = [&server, &clients](EventLoop& server_loop) {

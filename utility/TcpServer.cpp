@@ -39,14 +39,12 @@ TcpServer::~TcpServer()
     close(m_socket_fd);
 }
 
-bool TcpServer::listen(std::string_view, uint16_t port)
+bool TcpServer::listen(Ipv4Address host, uint16_t port)
 {
-    // FIXME: Use host parameter instead of INADDR_ANY
-
     sockaddr_in address = {};
     address.sin_family = AF_INET;
     address.sin_port = htons(port);
-    address.sin_addr.s_addr = INADDR_ANY;
+    address.sin_addr.s_addr = host.to_in_addr_t();
 
     if (bind(m_socket_fd, (const sockaddr*)&address, sizeof address) == -1) {
         perror("server: bind");
