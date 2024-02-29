@@ -1,6 +1,7 @@
 // Copyright (c) 2022 - Tim Blackstone
 
 #include "EventLoop.h"
+#include <cassert>
 #include <stdio.h>
 #include <unistd.h>
 #include <utility>
@@ -30,6 +31,9 @@ EventLoop::~EventLoop()
 
 EventLoop& EventLoop::current()
 {
+     // No event loop set!
+    assert(s_current_loop);
+
     return *s_current_loop;
 }
 
