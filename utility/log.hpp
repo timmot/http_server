@@ -65,10 +65,14 @@ struct CheckedFormatString {
     std::string_view m_string;
 };
 
-std::string stringify(char const* string) { return string; }
-std::string stringify(char* string) { return string; }
-std::string stringify(std::string_view string) { return std::string(string); }
-std::string stringify(std::string const& string) { return string; }
+// Couldn't import log.hpp more than once?
+// Having these not inline broke the one definition rule (ODR)
+// https://clang.llvm.org/extra/clang-tidy/checks/misc/definitions-in-headers.html
+// https://en.cppreference.com/w/cpp/language/definition
+inline std::string stringify(char const* string) { return string; }
+inline std::string stringify(char* string) { return string; }
+inline std::string stringify(std::string_view string) { return std::string(string); }
+inline std::string stringify(std::string const& string) { return string; }
 
 template <std::integral I>
 std::string stringify(I number) { return std::to_string(number); }
