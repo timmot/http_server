@@ -6,19 +6,16 @@
 #include "utility/DateTime.hpp"
 #include "utility/EventLoop.h"
 #include "utility/File.hpp"
+#include "utility/Ipv4Address.hpp"
 #include "utility/Socket.h"
 #include "utility/String.hpp"
+#include "utility/TcpClient.h"
 #include "utility/TcpServer.h"
 #include "utility/log.hpp"
-#include <arpa/inet.h>
-#include <fcntl.h>
-#include <iostream>
+#include <cstdlib>
 #include <memory>
-#include <netinet/in.h>
 #include <signal.h>
-#include <stdio.h>
 #include <string_view>
-#include <sys/socket.h>
 
 // GET / HTTP/1.1
 // Host: localhost:8080
@@ -134,22 +131,17 @@ int main(int argc, char* argv[])
         exit(EXIT_FAILURE);
     }
 
-    int fd = socket(PF_INET, SOCK_STREAM, 0);
-    auto client = BufferedSocket(fd);
-
     EventLoop main_loop;
 
-    main_loop.add_read(client.fd(), [&client](EventLoop& sub_loop) {
-        Bytes message(4096);
-        auto maybe_response = client.read(message);
+    auto client = TcpClient::create();
+    if (!client.has_value())
+        exit(EXIT_FAILURE);
 
-        if (!maybe_response.has_value()) {
-            sub_loop.remove_read(client.fd());
-        }
+    client->on_read = [&client](EventLoop& sub_loop, Bytes&& response) {
+        if (response.size() > 0)
+            logln("Message received (len {}): {}", response.size(), std::string { (char*)response.data(), response.size() });
+    };
 
-        if (maybe_response->size() > 0)
-            logln("Message received (len {}): {}", maybe_response->size(), std::string { (char*)maybe_response->data(), maybe_response->size() });
-    });
 
     signal(SIGINT, [](int) {
         // TODO: Can we quit the loop instead?
@@ -162,30 +154,30 @@ int main(int argc, char* argv[])
         exit(EXIT_SUCCESS);
     });
 
-    /*
-        sockaddr_in address = {};
-        address.sin_family = AF_INET;
-        address.sin_port = htons(8000);
-        address.sin_addr.s_addr = INADDR_ANY;
-    */
-    sockaddr_in address = {};
-    address.sin_family = AF_INET;
-    address.sin_port = htons(8000);
-    inet_aton("localhost", &address.sin_addr);
+    auto maybe_ip = Ipv4Address::from_string(argv[1]);
 
-    if (connect(fd, (const sockaddr*)&address, sizeof address)) {
-        perror("connect");
-        logln("Couldn't connect");
+    if (!maybe_ip)
+        maybe_ip = Ipv4Address::resolve_hostname(argv[1]);
+
+    if (!maybe_ip) {
+        logln("couldn't resolve ip/host");
         exit(EXIT_FAILURE);
     }
 
-    int sock_opts = fcntl(fd, F_GETFL);
-    fcntl(fd, F_SETFL, sock_opts | O_NONBLOCK);
+    int port = atoi(argv[2]);
+    if (!client->connect(*maybe_ip, port)) {
+        logln("Failed to connect to {}:{}", maybe_ip->to_string(), port);
+        exit(EXIT_FAILURE);
+    }
+
+
+    logln("Connecting to {}:{}", maybe_ip->to_string(), port);
 
     HttpRequest request = {};
     request.path = "/";
+    logln("Requesting http://{}:{}{}", maybe_ip->to_string(), port, request.path);
     Bytes message(request.serialise());
-    client.write(message);
+    client->write(message);
 
     main_loop.exec();
 
