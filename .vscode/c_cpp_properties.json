@@ -1,0 +1,7 @@
+{
+    "configurations": [
+        {
+            "compileCommands": "${workspaceFolder}/build/compile_commands.json"
+        }
+    ]
+}
