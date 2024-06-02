@@ -55,7 +55,8 @@ void EventLoop::pump()
 #endif
 
     if (number_of_events < 0) {
-        // TODO: fail somehow?
+        perror("epoll_wait");
+        assert(false);
     } else {
         for (int i = 0; i < number_of_events; ++i) {
 #ifdef __APPLE__
