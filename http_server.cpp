@@ -3,6 +3,7 @@
 #include "http/HttpRequest.hpp"
 #include "http/HttpResponse.hpp"
 #include "utility/Bytes.hpp"
+#include "utility/Convert.hpp"
 #include "utility/DateTime.hpp"
 #include "utility/EventLoop.h"
 #include "utility/File.hpp"
@@ -126,7 +127,7 @@
 
 int main(int argc, char* argv[])
 {
-    if (argc != 3) {
+    if (argc > 3) {
         fprintf(stderr, "usage: %s host port\n", argv[0]);
         exit(EXIT_FAILURE);
     }
@@ -138,17 +139,34 @@ int main(int argc, char* argv[])
 
     EventLoop main_loop;
 
-    auto maybe_ip = Ipv4Address::from_string(argv[1]);
+    std::optional<Ipv4Address> maybe_ip;
+    if (argc > 1) {
+        maybe_ip = Ipv4Address::from_string(argv[1]);
+    } else {
+        maybe_ip = Ipv4Address::resolve_hostname("localhost");
+    }
 
     if (!maybe_ip.has_value()) {
         logln("bad ip format");
         exit(EXIT_FAILURE);
     }
 
-    if (!server->listen(*maybe_ip, atoi(argv[2])))
+    std::optional<int> maybe_port;
+    if (argc > 2) {
+        maybe_port = Convert::to<int>(argv[2]);
+    } else {
+        maybe_port = 8000;
+    }
+
+    if (!maybe_port.has_value()) {
+        logln("bad port format");
+        exit(EXIT_FAILURE);
+    }
+
+    if (!server->listen(*maybe_ip, *maybe_port))
         exit(EXIT_FAILURE);
 
-    logln("listening on host: {}, port: {}", maybe_ip->to_string(), argv[2]);
+    logln("listening on host: {}, port: {}", maybe_ip->to_string(), *maybe_port);
 
     std::vector<std::unique_ptr<Socket>> clients;
     server->on_read = [&server, &clients](EventLoop& server_loop) {
