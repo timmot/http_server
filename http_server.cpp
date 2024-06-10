@@ -6,13 +6,11 @@
 #include "utility/Convert.hpp"
 #include "utility/DateTime.hpp"
 #include "utility/EventLoop.h"
-#include "utility/File.hpp"
 #include "utility/Ipv4Address.hpp"
 #include "utility/Socket.h"
 #include "utility/String.hpp"
 #include "utility/TcpServer.h"
 #include "utility/log.hpp"
-#include <iostream>
 #include <memory>
 #include <signal.h>
 #include <stdio.h>
@@ -125,6 +123,8 @@
     return http_request;
 }
 
+// TODO: Wrap in TLS
+// https://datatracker.ietf.org/doc/html/rfc8446
 int main(int argc, char* argv[])
 {
     if (argc > 3) {

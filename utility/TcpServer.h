@@ -6,7 +6,6 @@
 #include <functional>
 #include <memory>
 #include <optional>
-#include <string_view>
 
 class EventLoop;
 class Socket;

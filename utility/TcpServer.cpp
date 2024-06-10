@@ -1,16 +1,12 @@
 // Copyright (c) 2022 - Tim Blackstone
 
 #include "TcpServer.h"
-#include "Bytes.hpp"
 #include "EventLoop.h"
 #include "Socket.h"
 #include <arpa/inet.h>
-#include <errno.h>
 #include <fcntl.h>
-#include <iostream>
 #include <netdb.h>
 #include <stdio.h>
-#include <string.h>
 #include <sys/socket.h>
 #include <unistd.h>
 

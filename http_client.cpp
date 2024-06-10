@@ -1,19 +1,14 @@
 // Copyright (c) 2022 - Tim Blackstone
 
 #include "http/HttpRequest.hpp"
-#include "http/HttpResponse.hpp"
 #include "utility/Bytes.hpp"
-#include "utility/DateTime.hpp"
 #include "utility/EventLoop.h"
-#include "utility/File.hpp"
 #include "utility/Ipv4Address.hpp"
-#include "utility/Socket.h"
 #include "utility/String.hpp"
 #include "utility/TcpClient.h"
 #include "utility/TcpServer.h"
 #include "utility/log.hpp"
 #include <cstdlib>
-#include <memory>
 #include <signal.h>
 #include <string_view>
 
@@ -137,11 +132,10 @@ int main(int argc, char* argv[])
     if (!client.has_value())
         exit(EXIT_FAILURE);
 
-    client->on_read = [&client](EventLoop& sub_loop, Bytes&& response) {
+    client->on_read = [&client](EventLoop&, Bytes&& response) {
         if (response.size() > 0)
             logln("Message received (len {}): {}", response.size(), std::string { (char*)response.data(), response.size() });
     };
-
 
     signal(SIGINT, [](int) {
         // TODO: Can we quit the loop instead?
@@ -169,7 +163,6 @@ int main(int argc, char* argv[])
         logln("Failed to connect to {}:{}", maybe_ip->to_string(), port);
         exit(EXIT_FAILURE);
     }
-
 
     logln("Connecting to {}:{}", maybe_ip->to_string(), port);
 

@@ -3,7 +3,6 @@
 #pragma once
 
 #include "Bytes.hpp"
-#include <algorithm>
 #include <memory>
 #include <optional>
 #include <stdio.h>
@@ -21,6 +20,7 @@ public:
 
     ~Socket();
 
+    // TODO: Implement ErrorOr<T>, allow these functions to provide some failure information
     ssize_t read(Bytes& buffer);
     ssize_t read(std::span<uint8_t> buffer);
     ssize_t write(Bytes const& buffer);
@@ -37,18 +37,12 @@ private:
 class BufferedSocket {
 public:
     BufferedSocket(int fd)
-        : m_buffer(Bytes(65536))
-        , m_used_size(0)
-        , m_eof(false)
     {
         m_socket = Socket::create_from_fd(fd);
     }
 
     BufferedSocket(std::unique_ptr<Socket> socket)
-        : m_buffer(Bytes(65536))
-        , m_used_size(0)
-        , m_eof(false)
-        , m_socket(std::move(socket))
+        : m_socket(std::move(socket))
     {
     }
 
@@ -79,8 +73,10 @@ public:
 private:
     void populate_buffer();
 
-    Bytes m_buffer;
-    size_t m_used_size;
-    bool m_eof;
+    // FIXME: Don't initialise buffer size to 65536, the code should work if this is set to 4096 :(
+    // Can I use a ring buffer to fix this?
+    Bytes m_buffer = { 65536 };
+    size_t m_used_size = 0;
+    bool m_eof = false;
     std::unique_ptr<Socket> m_socket;
 };

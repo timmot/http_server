@@ -5,6 +5,7 @@
 #include "../utility/Bytes.hpp"
 #include "../utility/File.hpp"
 #include "../utility/MimeTypeDatabase.hpp"
+#include "../utility/log.hpp"
 #include <optional>
 #include <string>
 #include <string_view>

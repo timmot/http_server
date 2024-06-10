@@ -4,7 +4,6 @@
 #include <cassert>
 #include <stdio.h>
 #include <unistd.h>
-#include <utility>
 
 #ifdef __APPLE__
 #include <sys/event.h>
@@ -21,6 +20,7 @@ EventLoop::EventLoop()
 #else
     m_fd = epoll_create1(0);
 #endif
+    // FIXME: I don't think this properly supports nesting loops
     s_current_loop = this;
 }
 
@@ -31,7 +31,7 @@ EventLoop::~EventLoop()
 
 EventLoop& EventLoop::current()
 {
-     // No event loop set!
+    // No event loop set!
     assert(s_current_loop);
 
     return *s_current_loop;

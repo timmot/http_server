@@ -1,7 +1,5 @@
 #pragma once
 
-#include <assert.h>
-#include <concepts>
 #include <cxxabi.h>
 #include <iomanip>
 #include <iostream>
@@ -9,7 +7,6 @@
 #include <stdio.h>
 #include <string>
 #include <string_view>
-#include <typeinfo>
 #include <vector>
 
 // https://mpark.github.io/programming/2017/05/26/constexpr-function-parameters/

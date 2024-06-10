@@ -18,6 +18,9 @@ class JsonValue;
 using JsonArray = std::vector<JsonValue>;
 using JsonObject = std::unordered_map<std::string, JsonValue*>;
 
+// STL containers are not required to work with incomplete types.If you don't mind extra indirection, then the workaround is std::map<int, std::unique_ptr<Node>>
+// https://stackoverflow.com/questions/62860623/recursive-unordered-map
+
 class JsonValue {
 public:
     using Value = std::variant<double, std::string, bool, JsonObject, JsonArray, JsonNull>;

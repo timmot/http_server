@@ -2,7 +2,6 @@
 
 #pragma once
 
-#include "../utility/Bytes.hpp"
 #include "../utility/log.hpp"
 #include <string>
 #include <unordered_map>

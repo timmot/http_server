@@ -16,8 +16,11 @@ std::optional<TcpClient> TcpClient::create()
 TcpClient::TcpClient(int socket_fd)
     : BufferedSocket(socket_fd)
 {
+    // TODO: My server can handle multiple clients, but I can't use multiple clients to connect to my server
+    // I think this is either caused by my EventLoop implementation, or potentially TcpClient/BufferedSocket/Socket
     EventLoop::current().add_read(fd(), [this](EventLoop& loop) {
         if (on_read) {
+            // FIXME: This reads 4096 bytes and stops, any message longer will get cut-off
             Bytes message(4096);
             auto maybe_response = read(message);
 
@@ -43,7 +46,7 @@ bool TcpClient::connect(Ipv4Address host, int port)
         return false;
     }
 
-    // Set non-blocking after connect so it is synchronous
+    // Set non-blocking after connect so the connect is synchronous
     int sock_opts = fcntl(fd(), F_GETFL);
     fcntl(fd(), F_SETFL, sock_opts | O_NONBLOCK);
 

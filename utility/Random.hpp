@@ -2,7 +2,6 @@
 
 #pragma once
 
-#include <concepts>
 #include <random>
 
 class Random {
