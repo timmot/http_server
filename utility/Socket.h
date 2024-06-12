@@ -25,6 +25,8 @@ public:
     ssize_t read(std::span<uint8_t> buffer);
     ssize_t write(Bytes const& buffer);
 
+    void set_timeout(timeval timeout);
+
     int fd() const
     {
         return m_fd;
@@ -56,6 +58,8 @@ public:
     std::optional<Bytes> read(Bytes& buffer);
     std::optional<Bytes> read_line();
     std::optional<Bytes> read_until(char candidate);
+
+    void set_timeout(timeval timeout);
 
     // TODO: Read exactly the amount of bytes requests or fail and leave any remaining bytes in the m_buffer
     Bytes read_exactly(size_t n);

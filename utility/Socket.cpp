@@ -41,6 +41,19 @@ ssize_t Socket::write(Bytes const& buffer)
     return sent;
 }
 
+void Socket::set_timeout(timeval timeout)
+{
+    if (setsockopt(fd(), SOL_SOCKET, SO_RCVTIMEO, &timeout,
+            sizeof timeout)
+        < 0)
+        perror("setsockopt");
+
+    if (setsockopt(fd(), SOL_SOCKET, SO_SNDTIMEO, &timeout,
+            sizeof timeout)
+        < 0)
+        perror("setsockopt");
+}
+
 std::optional<Bytes> BufferedSocket::read(Bytes& buffer)
 {
     if (m_eof && m_used_size == 0)
@@ -118,6 +131,11 @@ Bytes BufferedSocket::read_exactly(size_t n)
     m_used_size -= readable_size;
 
     return buffer_to_take;
+}
+
+void BufferedSocket::set_timeout(timeval timeout)
+{
+    m_socket->set_timeout(timeout);
 }
 
 void BufferedSocket::populate_buffer()
