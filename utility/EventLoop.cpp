@@ -84,7 +84,7 @@ void EventLoop::add_read(int read_fd, std::function<void(EventLoop&)> callback)
     kevent(m_fd, &new_event, 1, NULL, 0, NULL);
 #else
     epoll_event ev = {};
-    ev.events = EPOLLIN | EPOLLET;
+    ev.events = EPOLLIN;
     ev.data.fd = read_fd;
     if (epoll_ctl(m_fd, EPOLL_CTL_ADD, read_fd, &ev) == -1) {
         perror("epoll_ctl");
