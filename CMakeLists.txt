@@ -20,5 +20,8 @@ target_link_libraries(server magic)
 add_executable(client http_client.cpp ${SOURCE_FILES})
 add_executable(json json.cpp ${SOURCE_FILES})
 add_executable(test test.cpp ${SOURCE_FILES})
+add_executable(multi_client multi_client.cpp ${SOURCE_FILES})
+target_link_libraries(multi_client pthread)
+add_executable(multi_server multi_server.cpp ${SOURCE_FILES})
 
 #add_subdirectory(chip8)
