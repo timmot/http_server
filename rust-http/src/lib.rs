@@ -8,6 +8,8 @@ pub struct ThreadPool {
     sender: Option<mpsc::Sender<Job>>,
 }
 
+// TODO: Write tests for ThreadPool
+
 type Job = Box<dyn FnOnce() + Send + 'static>;
 
 impl ThreadPool {
@@ -56,8 +58,7 @@ impl Drop for ThreadPool {
         drop(self.sender.take());
 
         for worker in &mut self.workers {
-            println!("Shutting down worker {}", worker.id);
-
+            // Shutting down worker
             if let Some(thread) = worker.thread.take() {
                 thread.join().unwrap();
             }
@@ -77,12 +78,11 @@ impl Worker {
 
             match message {
                 Ok(job) => {
-                    println!("Worker {id} got a job; executing.");
-
+                    // Worker executing job
                     job();
                 }
                 Err(_) => {
-                    println!("Worker {id} disconnected; shutting down.");
+                    // Worker disconnected
                     break;
                 }
             }
